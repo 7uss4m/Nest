@@ -78,6 +78,7 @@ export default function Page() {
         <WorkspaceSection ws={ws} isOwner={isOwner} onRename={(name) => setWs((w) => w ? { ...w, name } : w)} />
         <MembersSection ws={ws} myEmail={myEmail} isOwner={isOwner} onReload={load} />
         <ExchangeRatesSection />
+        <ApiKeysSection />
         <AccountSection myMember={myMember} />
       </div>
     </div>
@@ -448,6 +449,160 @@ function ExchangeRatesSection() {
           </div>
           <p className="text-[11.5px] text-[#4B5462] mt-2">
             1 {base || "BASE"} = {rate || "?"} {target || "TARGET"}. Dashboard totals convert to the base currency you specify.
+          </p>
+          {error && <p className="text-[12px] text-[#FB7185] mt-2">{error}</p>}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ── API Keys section ──────────────────────────────────────────────────────────
+
+interface ApiKeyDto {
+  id: string;
+  name: string;
+  prefix: string;
+  createdAt: string;
+  lastUsedAt?: string;
+}
+
+function ApiKeysSection() {
+  const [keys, setKeys] = useState<ApiKeyDto[]>([]);
+  const [name, setName] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [newKey, setNewKey] = useState<{ id: string; key: string; name: string } | null>(null);
+  const [copied, setCopied] = useState(false);
+  const [revoking, setRevoking] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    api.get<ApiKeyDto[]>("/api/user/api-keys").then(setKeys).catch(() => {});
+  }, []);
+
+  async function create() {
+    if (!name.trim()) return;
+    setCreating(true);
+    setError(null);
+    try {
+      const res = await api.post<{ id: string; key: string; name: string; prefix: string; createdAt: string }>(
+        "/api/user/api-keys", { name: name.trim() }
+      );
+      setNewKey({ id: res.id, key: res.key, name: res.name });
+      setKeys((prev) => [{ id: res.id, name: res.name, prefix: res.prefix, createdAt: res.createdAt }, ...prev]);
+      setName("");
+    } catch (e: unknown) {
+      setError(String(e));
+    } finally {
+      setCreating(false);
+    }
+  }
+
+  async function revoke(id: string) {
+    setRevoking(id);
+    try {
+      await api.delete(`/api/user/api-keys/${id}`);
+      setKeys((prev) => prev.filter((k) => k.id !== id));
+      if (newKey?.id === id) setNewKey(null);
+    } finally {
+      setRevoking(null);
+    }
+  }
+
+  function copyKey(key: string) {
+    navigator.clipboard.writeText(key).catch(() => {});
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <section className="mb-6">
+      <h2 className="text-[11px] font-semibold uppercase tracking-wider text-[#5B6573] mb-3">API Keys</h2>
+      <div className="rounded-[18px] overflow-hidden" style={{ background: "#141925", border: "1px solid rgba(255,255,255,0.06)" }}>
+
+        {/* New key banner — shown once after creation */}
+        {newKey && (
+          <div className="px-5 py-4" style={{ background: "rgba(45,212,191,0.07)", borderBottom: "1px solid rgba(45,212,191,0.15)" }}>
+            <p className="text-[11.5px] font-semibold text-[#2DD4BF] mb-2 flex items-center gap-1.5">
+              <Icon name="check_circle" size={14} />
+              Key created — copy it now. It won&apos;t be shown again.
+            </p>
+            <div className="flex items-center gap-2">
+              <code className="flex-1 text-[12.5px] font-mono text-[#EEF1F6] bg-[rgba(0,0,0,0.3)] rounded-[9px] px-3 py-2 overflow-x-auto whitespace-nowrap">
+                {newKey.key}
+              </code>
+              <button
+                onClick={() => copyKey(newKey.key)}
+                className="flex items-center gap-1 px-3 py-2 rounded-[9px] text-[12px] font-semibold shrink-0 transition-colors"
+                style={{ background: copied ? "rgba(45,212,191,0.15)" : "rgba(99,102,241,0.15)", color: copied ? "#2DD4BF" : "#818CF8" }}>
+                <Icon name={copied ? "check" : "content_copy"} size={14} />
+                {copied ? "Copied!" : "Copy"}
+              </button>
+              <button
+                onClick={() => setNewKey(null)}
+                className="text-[#5B6573] hover:text-[#98A2B3] transition-colors"
+                title="Dismiss">
+                <Icon name="close" size={16} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Existing keys */}
+        {keys.length > 0 && keys.map((k, i) => (
+          <div key={k.id} className="flex items-center gap-3 px-5 py-3.5"
+            style={{ borderBottom: i < keys.length - 1 ? "1px solid rgba(255,255,255,0.04)" : undefined }}>
+            <div className="w-8 h-8 rounded-[10px] flex items-center justify-center shrink-0" style={{ background: "rgba(99,102,241,0.1)" }}>
+              <Icon name="key" size={16} className="text-[#818CF8]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="text-[13.5px] font-semibold text-[#EEF1F6] truncate">{k.name}</div>
+              <div className="text-[11.5px] text-[#5B6573] font-mono">
+                {k.prefix}…
+                {k.lastUsedAt && (
+                  <span className="font-sans ml-2">
+                    · last used {new Date(k.lastUsedAt).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                  </span>
+                )}
+              </div>
+            </div>
+            <span className="text-[11px] text-[#5B6573] shrink-0">
+              {new Date(k.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })}
+            </span>
+            <button
+              onClick={() => revoke(k.id)}
+              disabled={revoking === k.id}
+              className="ml-1 text-[#5B6573] hover:text-[#FB7185] transition-colors disabled:opacity-40"
+              title="Revoke key">
+              <Icon name="delete" size={16} />
+            </button>
+          </div>
+        ))}
+
+        {keys.length === 0 && !newKey && (
+          <div className="px-5 py-4 text-[13px] text-[#5B6573]">No API keys yet.</div>
+        )}
+
+        {/* Create form */}
+        <div className="px-5 py-4" style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+          <p className="text-[11px] font-semibold text-[#5B6573] uppercase tracking-wider mb-3">Generate new key</p>
+          <div className="flex gap-2">
+            <input
+              placeholder="Key name (e.g. Home server)"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && create()}
+              className="flex-1 bg-[rgba(255,255,255,0.05)] text-[#EEF1F6] text-[13px] rounded-[10px] px-3 py-2 outline-none border border-[rgba(255,255,255,0.08)] focus:border-[rgba(99,102,241,0.5)] placeholder:text-[#5B6573]"
+            />
+            <button
+              onClick={create}
+              disabled={creating || !name.trim()}
+              className="px-4 py-2 rounded-[10px] bg-[#6366F1] text-white text-[13px] font-semibold disabled:opacity-50 hover:bg-[#5558E3] transition-colors shrink-0">
+              {creating ? "Creating…" : "Generate"}
+            </button>
+          </div>
+          <p className="text-[11.5px] text-[#4B5462] mt-2">
+            API keys authenticate requests and can access Swagger docs when enabled.
           </p>
           {error && <p className="text-[12px] text-[#FB7185] mt-2">{error}</p>}
         </div>

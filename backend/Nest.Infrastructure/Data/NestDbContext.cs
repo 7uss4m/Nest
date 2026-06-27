@@ -29,6 +29,7 @@ public class NestDbContext(DbContextOptions<NestDbContext> options)
     public DbSet<TransactionTemplate> TransactionTemplates => Set<TransactionTemplate>();
     public DbSet<ActivityLog> ActivityLogs => Set<ActivityLog>();
     public DbSet<WorkspaceInvite> WorkspaceInvites => Set<WorkspaceInvite>();
+    public DbSet<ApiKey> ApiKeys => Set<ApiKey>();
 
     protected override void OnModelCreating(ModelBuilder builder)
     {

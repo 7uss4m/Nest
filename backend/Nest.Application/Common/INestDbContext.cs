@@ -25,6 +25,7 @@ public interface INestDbContext
     DbSet<TransactionTemplate> TransactionTemplates { get; }
     DbSet<ActivityLog> ActivityLogs { get; }
     DbSet<WorkspaceInvite> WorkspaceInvites { get; }
+    DbSet<ApiKey> ApiKeys { get; }
 
     Task<int> SaveChangesAsync(CancellationToken ct = default);
 }

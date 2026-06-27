@@ -1,5 +1,7 @@
 using System.Text;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
 
 namespace Nest.Api.Extensions;
@@ -27,6 +29,19 @@ public static class JwtExtensions
                     Encoding.UTF8.GetBytes(config["Jwt:Key"]!)),
                 ClockSkew = TimeSpan.FromSeconds(30),
             };
+        })
+        .AddScheme<AuthenticationSchemeOptions, ApiKeyAuthHandler>(
+            ApiKeyAuthHandler.SchemeName, null);
+
+        // Default policy accepts both JWT and API key
+        services.AddAuthorization(opts =>
+        {
+            opts.DefaultPolicy = new AuthorizationPolicyBuilder()
+                .RequireAuthenticatedUser()
+                .AddAuthenticationSchemes(
+                    JwtBearerDefaults.AuthenticationScheme,
+                    ApiKeyAuthHandler.SchemeName)
+                .Build();
         });
 
         return services;

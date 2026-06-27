@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using Nest.Api.Extensions;
+using Nest.Application.Auth;
 using Nest.Infrastructure;
 using Nest.Infrastructure.Data;
 
@@ -21,7 +22,6 @@ builder.Services.AddCors(opts => opts.AddPolicy("nest", policy =>
         .AllowCredentials()));
 
 var swaggerEnabled = builder.Configuration["Swagger:Enabled"] == "true";
-var swaggerKey     = builder.Configuration["Swagger:ApiKey"] ?? "";
 
 var app = builder.Build();
 
@@ -34,23 +34,49 @@ using (var scope = app.Services.CreateScope())
 
 if (swaggerEnabled)
 {
+    // Guard: everything except /api/* and /login* requires a valid swagger_auth cookie
     app.Use(async (ctx, next) =>
     {
-        if (ctx.Request.Path.StartsWithSegments("/swagger"))
+        var path = ctx.Request.Path;
+        if (!path.StartsWithSegments("/api") && !path.StartsWithSegments("/login"))
         {
-            var provided = ctx.Request.Query["key"].FirstOrDefault()
-                        ?? ctx.Request.Headers["X-Swagger-Key"].FirstOrDefault();
-            if (!string.IsNullOrEmpty(swaggerKey) && provided != swaggerKey)
+            var cookieKey = ctx.Request.Cookies["swagger_auth"];
+            if (!string.IsNullOrEmpty(cookieKey))
             {
-                ctx.Response.StatusCode = 401;
-                await ctx.Response.WriteAsync("Unauthorized");
-                return;
+                var svc = ctx.RequestServices.GetRequiredService<IApiKeyService>();
+                if (await svc.ValidateAsync(cookieKey) is not null) { await next(); return; }
+                ctx.Response.Cookies.Delete("swagger_auth");
             }
+            ctx.Response.Redirect("/login");
+            return;
         }
         await next();
     });
+
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(opts =>
+    {
+        opts.RoutePrefix = "";
+        opts.SwaggerEndpoint("/swagger/v1/swagger.json", "Nest API v1");
+    });
+
+    app.MapGet("/login", (HttpRequest req) =>
+        Results.Content(SwaggerLoginPage.Html(req.Query.ContainsKey("error")), "text/html; charset=utf-8"));
+
+    app.MapPost("/login", async (HttpContext ctx, IApiKeyService svc) =>
+    {
+        var form = await ctx.Request.ReadFormAsync();
+        var raw = form["key"].FirstOrDefault() ?? "";
+        var userId = await svc.ValidateAsync(raw);
+        if (userId is null) return Results.Redirect("/login?error=1");
+        ctx.Response.Cookies.Append("swagger_auth", raw, new CookieOptions
+        {
+            HttpOnly = true,
+            SameSite = SameSiteMode.Strict,
+            Expires = DateTimeOffset.UtcNow.AddHours(8),
+        });
+        return Results.Redirect("/");
+    });
 }
 
 app.UseCors("nest");

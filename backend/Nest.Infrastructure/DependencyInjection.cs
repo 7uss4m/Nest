@@ -35,6 +35,7 @@ public static class DependencyInjection
         .AddSignInManager();
 
         services.AddScoped<ITokenService, TokenService>();
+        services.AddScoped<IApiKeyService, ApiKeyService>();
         services.AddHttpClient("ntfy");
         services.AddScoped<INtfyService, NtfyService>();
         services.AddScoped<IEmailService, EmailService>();
