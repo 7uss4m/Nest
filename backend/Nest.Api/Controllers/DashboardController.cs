@@ -76,10 +76,22 @@ public class DashboardController(INestDbContext db) : ControllerBase
             ? baseCurrency.ToUpper()
             : await CurrencyHelper.LoadDefaultCodeAsync(db, workspaceId);
 
-        var accounts = await db.Accounts
+        var accountEntities = await db.Accounts
             .Where(a => a.WorkspaceId == workspaceId)
             .Select(a => new { a.Id, a.Name, a.Type, a.Currency, a.Color, a.Icon })
             .ToListAsync();
+
+        var accountIds = accountEntities.Select(a => a.Id).ToList();
+        var balances = await db.Transactions
+            .Where(t => accountIds.Contains(t.AccountId))
+            .GroupBy(t => t.AccountId)
+            .Select(g => new
+            {
+                AccountId = g.Key,
+                Balance = g.Sum(t => t.Type == TransactionType.Income ? t.Amount
+                    : t.Type == TransactionType.Expense ? -t.Amount : 0m),
+            })
+            .ToDictionaryAsync(x => x.AccountId, x => x.Balance);
 
         var upcomingCutoff = now.AddDays(30);
         var upcomingRaw = await db.PlannedPayments
@@ -96,7 +108,11 @@ public class DashboardController(INestDbContext db) : ControllerBase
             expense = CurrencyHelper.ToMoney(expenseRaw, displayCode),
             saved   = CurrencyHelper.ToMoney(incomeRaw - expenseRaw, displayCode),
             displayCurrency = displayCode,
-            accounts,
+            accounts = accountEntities.Select(a => new
+            {
+                a.Id, a.Name, a.Type, a.Currency, a.Color, a.Icon,
+                balance = CurrencyHelper.ToMoney(balances.GetValueOrDefault(a.Id), a.Currency),
+            }).ToList(),
             upcomingPayments = upcomingRaw.Select(p => new
             {
                 p.Id, p.Name, p.DueDate, p.Icon,

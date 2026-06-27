@@ -76,10 +76,6 @@ class _BudgetList extends StatelessWidget {
     final catMap = {for (final c in data.categories) c.id: c};
     final spendMap = {for (final s in data.spending) s.categoryId: s.total};
 
-    final totalBudgeted = data.budgets.fold(0.0, (s, b) => s + b.amountLimit.amount);
-    final refMoney = data.budgets.first.amountLimit;
-    final totalSpent = data.budgets.fold(0.0, (s, b) => s + (spendMap[b.categoryId] ?? 0.0));
-
     if (data.budgets.isEmpty) {
       return const Center(
         child: Column(mainAxisSize: MainAxisSize.min, children: [
@@ -91,6 +87,10 @@ class _BudgetList extends StatelessWidget {
         ]),
       );
     }
+
+    final totalBudgeted = data.budgets.fold(0.0, (s, b) => s + b.amountLimit.amount);
+    final refMoney = data.budgets.first.amountLimit;
+    final totalSpent = data.budgets.fold(0.0, (s, b) => s + (spendMap[b.categoryId] ?? 0.0));
 
     return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
