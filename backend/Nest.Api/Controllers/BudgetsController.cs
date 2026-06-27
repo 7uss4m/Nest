@@ -2,7 +2,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using Nest.Api.Helpers;
 using Nest.Application.Common;
+using Nest.Application.Currencies;
 using Nest.Domain.Entities;
 using Nest.Domain.Enums;
 
@@ -23,12 +25,19 @@ public class BudgetsController(INestDbContext db) : ControllerBase
     {
         if (!await HasAccessAsync(workspaceId)) return Forbid();
 
+        var decimals = await CurrencyHelper.LoadDecimalsAsync(db, workspaceId);
+        var defaultCode = await CurrencyHelper.LoadDefaultCodeAsync(db, workspaceId);
+
         var budgets = await db.Budgets
             .Where(b => b.WorkspaceId == workspaceId)
             .Select(b => new { b.Id, b.Period, b.AmountLimit, b.Rollover, b.CategoryId, b.CreatedAt })
             .ToListAsync();
 
-        return Ok(budgets);
+        return Ok(budgets.Select(b => new
+        {
+            b.Id, b.Period, b.Rollover, b.CategoryId, b.CreatedAt,
+            AmountLimit = CurrencyHelper.ToMoney(b.AmountLimit, defaultCode, decimals),
+        }));
     }
 
     [HttpPost]

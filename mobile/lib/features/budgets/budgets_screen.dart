@@ -76,7 +76,8 @@ class _BudgetList extends StatelessWidget {
     final catMap = {for (final c in data.categories) c.id: c};
     final spendMap = {for (final s in data.spending) s.categoryId: s.total};
 
-    final totalBudgeted = data.budgets.fold(0.0, (s, b) => s + b.amountLimit);
+    final totalBudgeted = data.budgets.fold(0.0, (s, b) => s + b.amountLimit.amount);
+    final refMoney = data.budgets.first.amountLimit;
     final totalSpent = data.budgets.fold(0.0, (s, b) => s + (spendMap[b.categoryId] ?? 0.0));
 
     if (data.budgets.isEmpty) {
@@ -109,13 +110,13 @@ class _BudgetList extends StatelessWidget {
                   border: Border.all(color: NestColors.border),
                 ),
                 child: Row(children: [
-                  _SummaryItem(label: 'Budgeted', value: formatCurrency(totalBudgeted), color: NestColors.indigoL),
+                  _SummaryItem(label: 'Budgeted', value: formatCurrency(totalBudgeted, refMoney.currencyCode, refMoney.decimalPlaces), color: NestColors.indigoL),
                   const _Divider(),
-                  _SummaryItem(label: 'Spent', value: formatCurrency(totalSpent), color: NestColors.expense),
+                  _SummaryItem(label: 'Spent', value: formatCurrency(totalSpent, refMoney.currencyCode, refMoney.decimalPlaces), color: NestColors.expense),
                   const _Divider(),
                   _SummaryItem(
                     label: 'Remaining',
-                    value: formatCurrency((totalBudgeted - totalSpent).clamp(0, double.infinity)),
+                    value: formatCurrency((totalBudgeted - totalSpent).clamp(0, double.infinity), refMoney.currencyCode, refMoney.decimalPlaces),
                     color: NestColors.income,
                   ),
                 ]),
@@ -130,8 +131,8 @@ class _BudgetList extends StatelessWidget {
               final cat = catMap[b.categoryId];
               if (cat == null) return const SizedBox.shrink();
               final spent = spendMap[b.categoryId] ?? 0.0;
-              final pct = b.amountLimit > 0 ? (spent / b.amountLimit).clamp(0.0, 1.0) : 0.0;
-              final isOver = spent > b.amountLimit;
+              final pct = b.amountLimit.amount > 0 ? (spent / b.amountLimit.amount).clamp(0.0, 1.0) : 0.0;
+              final isOver = spent > b.amountLimit.amount;
               final color = _parseHex(cat.color);
 
               return Padding(
@@ -166,7 +167,7 @@ class _BudgetList extends StatelessWidget {
                             child: const Text('OVER', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: NestColors.expense)),
                           ),
                         Text(
-                          '${formatCurrency(spent)} / ${formatCurrency(b.amountLimit)}',
+                          '${formatCurrency(spent, b.amountLimit.currencyCode, b.amountLimit.decimalPlaces)} / ${formatMoney(b.amountLimit)}',
                           style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: isOver ? NestColors.expense : NestColors.text1),
                         ),
                       ]),

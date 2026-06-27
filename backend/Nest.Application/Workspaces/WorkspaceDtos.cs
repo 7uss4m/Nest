@@ -1,3 +1,4 @@
+using Nest.Application.Currencies;
 using Nest.Domain.Enums;
 
 namespace Nest.Application.Workspaces;
@@ -11,7 +12,8 @@ public record WorkspaceDto(
     string Name,
     Guid OwnerId,
     DateTime CreatedAt,
-    IReadOnlyList<WorkspaceMemberDto> Members);
+    IReadOnlyList<WorkspaceMemberDto> Members,
+    IReadOnlyList<CurrencyDto> Currencies);
 
 public record WorkspaceMemberDto(
     Guid UserId,

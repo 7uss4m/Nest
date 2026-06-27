@@ -2,7 +2,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using Nest.Api.Helpers;
 using Nest.Application.Common;
+using Nest.Application.Currencies;
 using Nest.Domain.Entities;
 using Nest.Domain.Enums;
 
@@ -23,19 +25,17 @@ public class AssetsController(INestDbContext db) : ControllerBase
     {
         if (!await HasAccessAsync(workspaceId)) return Forbid();
 
-        var assets = await db.Assets
-            .Where(a => a.WorkspaceId == workspaceId)
-            .Select(a => new
-            {
-                a.Id, a.Name, a.Description, a.AssetClass, a.AssetType,
-                a.CurrentValue, a.Currency,
-                a.PurchaseDate, a.PurchasePrice, a.PurchaseCurrency,
-                a.Institution, a.Condition, a.Location,
-                a.IsShared, a.Notes, a.CreatedAt, a.CurrentValueUpdatedAt,
-            })
-            .ToListAsync();
+        var assets = await db.Assets.Where(a => a.WorkspaceId == workspaceId).ToListAsync();
+        var decimals = await CurrencyHelper.LoadDecimalsAsync(db, workspaceId);
 
-        return Ok(assets);
+        return Ok(assets.Select(a => new
+        {
+            a.Id, a.Name, a.Description, a.AssetClass, a.AssetType,
+            CurrentValue = CurrencyHelper.ToMoney(a.CurrentValue, a.Currency, decimals),
+            PurchasePrice = CurrencyHelper.ToMoney(a.PurchasePrice, a.PurchaseCurrency, decimals),
+            a.PurchaseDate, a.Institution, a.Condition, a.Location,
+            a.IsShared, a.Notes, a.CreatedAt, a.CurrentValueUpdatedAt,
+        }));
     }
 
     [HttpGet("{id:guid}")]
@@ -44,23 +44,29 @@ public class AssetsController(INestDbContext db) : ControllerBase
         if (!await HasAccessAsync(workspaceId)) return Forbid();
 
         var asset = await db.Assets
+            .Include(a => a.ValueHistory)
             .Where(a => a.WorkspaceId == workspaceId && a.Id == id)
-            .Select(a => new
-            {
-                a.Id, a.Name, a.Description, a.AssetClass, a.AssetType,
-                a.CurrentValue, a.Currency,
-                a.PurchaseDate, a.PurchasePrice, a.PurchaseCurrency,
-                a.Institution, a.Condition, a.Location,
-                a.IsShared, a.Notes, a.CreatedAt, a.CurrentValueUpdatedAt,
-                ValueHistory = a.ValueHistory
-                    .OrderBy(h => h.CreatedAt)
-                    .Select(h => new { h.Value, h.CreatedAt })
-                    .ToList(),
-            })
             .FirstOrDefaultAsync();
 
         if (asset is null) return NotFound();
-        return Ok(asset);
+
+        var decimals = await CurrencyHelper.LoadDecimalsAsync(db, workspaceId);
+        return Ok(new
+        {
+            asset.Id, asset.Name, asset.Description, asset.AssetClass, asset.AssetType,
+            CurrentValue = CurrencyHelper.ToMoney(asset.CurrentValue, asset.Currency, decimals),
+            PurchasePrice = CurrencyHelper.ToMoney(asset.PurchasePrice, asset.PurchaseCurrency, decimals),
+            asset.PurchaseDate, asset.Institution, asset.Condition, asset.Location,
+            asset.IsShared, asset.Notes, asset.CreatedAt, asset.CurrentValueUpdatedAt,
+            ValueHistory = asset.ValueHistory
+                .OrderBy(h => h.CreatedAt)
+                .Select(h => new
+                {
+                    Value = CurrencyHelper.ToMoney(h.Value, asset.Currency, decimals),
+                    h.CreatedAt,
+                })
+                .ToList(),
+        });
     }
 
     [HttpPost]

@@ -5,13 +5,31 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
-export function formatCurrency(amount: number, currency = "USD"): string {
+export interface MoneyDto {
+  amount: number;
+  currencyCode: string;
+  decimalPlaces: number;
+}
+
+export interface CurrencyDto {
+  code: string;
+  symbol: string;
+  decimalPlaces: number;
+  isDefault: boolean;
+}
+
+export function formatCurrency(amount: number, currency = "USD", decimals?: number): string {
+  const d = decimals ?? 2;
   return new Intl.NumberFormat("en-US", {
     style: "currency",
     currency,
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
+    minimumFractionDigits: d,
+    maximumFractionDigits: d,
   }).format(amount);
+}
+
+export function formatMoney(money: MoneyDto): string {
+  return formatCurrency(money.amount, money.currencyCode, money.decimalPlaces);
 }
 
 export function formatCompact(amount: number): string {

@@ -92,9 +92,10 @@ class _LiabilityList extends ConsumerWidget {
       );
     }
 
-    final totalDebt = liabilities.fold(0.0, (s, l) => s + l.currentBalance);
-    final totalOriginal = liabilities.fold(0.0, (s, l) => s + l.originalAmount);
+    final totalDebt = liabilities.fold(0.0, (s, l) => s + l.currentBalance.amount);
+    final totalOriginal = liabilities.fold(0.0, (s, l) => s + l.originalAmount.amount);
     final totalPaid = (totalOriginal - totalDebt).clamp(0.0, double.infinity);
+    final refMoney = liabilities.first.currentBalance;
 
     return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -117,14 +118,14 @@ class _LiabilityList extends ConsumerWidget {
                 const Text('Total Debt', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white70)),
                 const SizedBox(height: 6),
                 Text(
-                  formatCurrency(totalDebt),
+                  formatCurrency(totalDebt, refMoney.currencyCode, refMoney.decimalPlaces),
                   style: const TextStyle(fontFamily: 'InterTight', fontWeight: FontWeight.w800, fontSize: 30, color: Colors.white),
                 ),
                 const SizedBox(height: 14),
                 Row(children: [
-                  _HeroStat(label: 'Original', value: formatCurrency(totalOriginal), color: Colors.white70),
+                  _HeroStat(label: 'Original', value: formatCurrency(totalOriginal, refMoney.currencyCode, refMoney.decimalPlaces), color: Colors.white70),
                   const SizedBox(width: 24),
-                  _HeroStat(label: 'Paid Off', value: formatCurrency(totalPaid), color: NestColors.income),
+                  _HeroStat(label: 'Paid Off', value: formatCurrency(totalPaid, refMoney.currencyCode, refMoney.decimalPlaces), color: NestColors.income),
                 ]),
               ]),
             ),
@@ -153,8 +154,8 @@ class _LiabilityTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final typeIdx = liability.type.clamp(0, _liabilityTypeLabels.length - 1);
-    final paidPct = liability.originalAmount > 0
-        ? ((liability.originalAmount - liability.currentBalance) / liability.originalAmount).clamp(0.0, 1.0)
+    final paidPct = liability.originalAmount.amount > 0
+        ? ((liability.originalAmount.amount - liability.currentBalance.amount) / liability.originalAmount.amount).clamp(0.0, 1.0)
         : 0.0;
     final paidPctDisplay = (paidPct * 100).round();
 
@@ -188,11 +189,11 @@ class _LiabilityTile extends StatelessWidget {
             ])),
             Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
               Text(
-                formatCurrency(liability.currentBalance),
+                formatMoney(liability.currentBalance),
                 style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: NestColors.expense, fontFamily: 'InterTight'),
               ),
               Text(
-                'of ${formatCurrency(liability.originalAmount)}',
+                'of ${formatMoney(liability.originalAmount)}',
                 style: const TextStyle(fontSize: 11, color: NestColors.text4),
               ),
             ]),
@@ -224,7 +225,7 @@ class _LiabilityTile extends StatelessWidget {
               if (liability.monthlyPayment != null) ...[
                 const Icon(Icons.calendar_month_outlined, color: NestColors.text4, size: 13),
                 const SizedBox(width: 3),
-                Text('${formatCurrency(liability.monthlyPayment!)}/mo', style: const TextStyle(fontSize: 11, color: NestColors.text4)),
+                Text('${formatMoney(liability.monthlyPayment!)}/mo', style: const TextStyle(fontSize: 11, color: NestColors.text4)),
                 const SizedBox(width: 16),
               ],
               const Spacer(),

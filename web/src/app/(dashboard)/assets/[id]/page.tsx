@@ -4,14 +4,14 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { getWorkspaceId } from "@/lib/auth";
-import { formatCurrency } from "@/lib/utils";
+import { formatMoney, MoneyDto } from "@/lib/utils";
 import { Topbar } from "@/components/layout/Topbar";
 import { Icon } from "@/components/ui/Icon";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface HistoryPoint {
-  value: number;
+  value: MoneyDto;
   createdAt: string;
 }
 
@@ -21,11 +21,9 @@ interface AssetDetail {
   description?: string;
   assetClass: number;
   assetType: number;
-  currentValue: number;
-  currency: string;
+  currentValue: MoneyDto;
   purchaseDate?: string;
-  purchasePrice?: number;
-  purchaseCurrency?: string;
+  purchasePrice?: MoneyDto;
   institution?: string;
   condition?: string;
   location?: string;
@@ -64,7 +62,7 @@ function ValueHistoryChart({ history, color }: { history: HistoryPoint[]; color:
   }
 
   const W = 560, H = 120, PAD_X = 12, PAD_Y = 12;
-  const values = history.map((h) => h.value);
+  const values = history.map((h) => h.value.amount);
   const minV = Math.min(...values);
   const maxV = Math.max(...values, minV + 1);
   const n = history.length;
@@ -72,7 +70,7 @@ function ValueHistoryChart({ history, color }: { history: HistoryPoint[]; color:
   function xOf(i: number) { return PAD_X + (i / (n - 1)) * (W - PAD_X * 2); }
   function yOf(v: number) { return PAD_Y + (1 - (v - minV) / (maxV - minV)) * (H - PAD_Y * 2); }
 
-  const pts = history.map((h, i) => ({ x: xOf(i), y: yOf(h.value), ...h }));
+  const pts = history.map((h, i) => ({ x: xOf(i), y: yOf(h.value.amount), ...h }));
   const line = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
   const area = `${line} L${pts[n - 1].x.toFixed(1)},${H} L${pts[0].x.toFixed(1)},${H} Z`;
   const gradId = `vhg-${color.replace("#", "")}`;
@@ -121,13 +119,12 @@ function ValueHistoryChart({ history, color }: { history: HistoryPoint[]; color:
                 y={Math.max(hoverPt.y - 52, 0) + 30}
                 fontSize="10" fontWeight="700" fill={color}
               >
-                {formatCurrency(hoverPt.value)}
+                {formatMoney(hoverPt.value)}
               </text>
             </g>
           </>
         )}
       </svg>
-      {/* Date axis labels */}
       <div className="flex justify-between mt-1 text-[9.5px] text-[#3B4252]">
         <span>{new Date(history[0].createdAt).toLocaleDateString("en-US", { month: "short", year: "2-digit" })}</span>
         {history.length > 2 && (
@@ -172,16 +169,16 @@ export default function AssetDetailPage() {
   const color = asset ? (TYPE_COLORS[asset.assetType] ?? "#98A2B3") : "#6366F1";
   const icon = asset ? (TYPE_ICONS[asset.assetType] ?? "category") : "diamond";
 
-  const gain = asset?.purchasePrice != null ? asset.currentValue - asset.purchasePrice : null;
-  const gainPct = gain != null && asset?.purchasePrice ? (gain / asset.purchasePrice) * 100 : null;
+  const gainAmount = asset?.purchasePrice != null ? asset.currentValue.amount - asset.purchasePrice.amount : null;
+  const gainPct = gainAmount != null && asset?.purchasePrice ? (gainAmount / asset.purchasePrice.amount) * 100 : null;
   const daysOwned = asset?.purchaseDate
     ? Math.floor((Date.now() - new Date(asset.purchaseDate).getTime()) / 86400000)
     : asset
     ? Math.floor((Date.now() - new Date(asset.createdAt).getTime()) / 86400000)
     : null;
 
-  const avgMonthlyAppreciation = gain != null && daysOwned && daysOwned > 30
-    ? (gain / (daysOwned / 30))
+  const avgMonthlyAppreciation = gainAmount != null && daysOwned && daysOwned > 30
+    ? (gainAmount / (daysOwned / 30))
     : null;
 
   const backBtn = (
@@ -230,14 +227,14 @@ export default function AssetDetailPage() {
                     {asset.institution && ` · ${asset.institution}`}
                   </div>
                   <div className="text-[36px] font-[800] tabular leading-tight mt-1" style={{ fontFamily: "'Inter Tight'", color }}>
-                    {formatCurrency(asset.currentValue, asset.currency)}
+                    {formatMoney(asset.currentValue)}
                   </div>
-                  {gain != null && (
+                  {gainAmount != null && (
                     <div
                       className="text-[13.5px] font-semibold mt-1"
-                      style={{ color: gain >= 0 ? "#34D399" : "#FB7185" }}
+                      style={{ color: gainAmount >= 0 ? "#34D399" : "#FB7185" }}
                     >
-                      {gain >= 0 ? "+" : ""}{formatCurrency(gain, asset.currency)}
+                      {gainAmount >= 0 ? "+" : ""}{formatMoney({ ...asset.currentValue, amount: gainAmount })}
                       {gainPct != null && ` (${gainPct >= 0 ? "+" : ""}${gainPct.toFixed(1)}%)`}
                       {" from purchase"}
                     </div>
@@ -254,13 +251,13 @@ export default function AssetDetailPage() {
               {asset.purchasePrice != null && (
                 <StatChip
                   label="Purchase Price"
-                  value={formatCurrency(asset.purchasePrice, asset.purchaseCurrency ?? asset.currency)}
+                  value={formatMoney(asset.purchasePrice)}
                 />
               )}
               {avgMonthlyAppreciation != null && (
                 <StatChip
                   label="Avg / Month"
-                  value={`${avgMonthlyAppreciation >= 0 ? "+" : ""}${formatCurrency(avgMonthlyAppreciation, asset.currency)}`}
+                  value={`${avgMonthlyAppreciation >= 0 ? "+" : ""}${formatMoney({ ...asset.currentValue, amount: avgMonthlyAppreciation })}`}
                   color={avgMonthlyAppreciation >= 0 ? "#34D399" : "#FB7185"}
                 />
               )}
@@ -286,7 +283,7 @@ export default function AssetDetailPage() {
                 <div className="flex flex-col divide-y" style={{ borderColor: "rgba(255,255,255,0.05)" }}>
                   {[...asset.valueHistory].reverse().map((h, i) => {
                     const prev = [...asset.valueHistory].reverse()[i + 1];
-                    const delta = prev ? h.value - prev.value : null;
+                    const delta = prev ? h.value.amount - prev.value.amount : null;
                     return (
                       <div key={h.createdAt + i} className="flex items-center justify-between py-3">
                         <div className="text-[12.5px] text-[#98A2B3]">
@@ -298,11 +295,11 @@ export default function AssetDetailPage() {
                               className="text-[11.5px] font-medium"
                               style={{ color: delta >= 0 ? "#34D399" : "#FB7185" }}
                             >
-                              {delta >= 0 ? "+" : ""}{formatCurrency(delta, asset.currency)}
+                              {delta >= 0 ? "+" : ""}{formatMoney({ ...h.value, amount: delta })}
                             </span>
                           )}
                           <span className="text-[13px] font-[700] tabular" style={{ fontFamily: "'Inter Tight'", color }}>
-                            {formatCurrency(h.value, asset.currency)}
+                            {formatMoney(h.value)}
                           </span>
                         </div>
                       </div>

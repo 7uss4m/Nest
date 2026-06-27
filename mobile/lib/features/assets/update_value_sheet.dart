@@ -20,7 +20,7 @@ class _UpdateValueSheetState extends ConsumerState<UpdateValueSheet> {
   @override
   void initState() {
     super.initState();
-    _ctrl = TextEditingController(text: widget.asset.currentValue.toStringAsFixed(2));
+    _ctrl = TextEditingController(text: widget.asset.currentValue.amount.toStringAsFixed(widget.asset.currentValue.decimalPlaces));
   }
 
   @override
@@ -83,7 +83,7 @@ class _UpdateValueSheetState extends ConsumerState<UpdateValueSheet> {
               border: Border.all(color: NestColors.teal.withOpacity(0.25)),
             ),
             child: Row(children: [
-              Text(widget.asset.currency, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: NestColors.teal, fontFamily: 'InterTight')),
+              Text(widget.asset.currentValue.currencyCode, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: NestColors.teal, fontFamily: 'InterTight')),
               const SizedBox(width: 8),
               Expanded(
                 child: TextField(
@@ -100,7 +100,7 @@ class _UpdateValueSheetState extends ConsumerState<UpdateValueSheet> {
           ),
           const SizedBox(height: 8),
           Text(
-            'Previous: ${formatCurrency(widget.asset.currentValue, widget.asset.currency)}',
+            'Previous: ${formatMoney(widget.asset.currentValue)}',
             style: const TextStyle(fontSize: 12, color: NestColors.text4),
           ),
           const SizedBox(height: 20),

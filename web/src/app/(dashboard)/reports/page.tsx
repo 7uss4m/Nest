@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { api } from "@/lib/api";
 import { getWorkspaceId } from "@/lib/auth";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, formatMoney, MoneyDto } from "@/lib/utils";
 import { Topbar } from "@/components/layout/Topbar";
 import { Icon } from "@/components/ui/Icon";
 
@@ -563,7 +563,7 @@ export default function ReportsPage() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [accounts, setAccounts] = useState<Account[]>([]);
   const [accountFilter, setAccountFilter] = useState<string>("all");
-  const [summary, setSummary] = useState<{ income: number; expense: number; saved: number } | null>(null);
+  const [summary, setSummary] = useState<{ income: MoneyDto; expense: MoneyDto; saved: MoneyDto } | null>(null);
   const [dailySpending, setDailySpending] = useState<{ day: number; total: number }[]>([]);
   const [prevSpending, setPrevSpending] = useState<CategorySpend[]>([]);
   const [projected, setProjected] = useState<{
@@ -606,7 +606,7 @@ export default function ReportsPage() {
     const prevMonth = month === 1 ? 12 : month - 1;
     const acctQ = accountFilter !== "all" ? `&accountId=${accountFilter}` : "";
     Promise.all([
-      api.get<{ income: number; expense: number; saved: number }>(`${base}/dashboard/summary?year=${year}&month=${month}`),
+      api.get<{ income: MoneyDto; expense: MoneyDto; saved: MoneyDto }>(`${base}/dashboard/summary?year=${year}&month=${month}`),
       api.get<CategorySpend[]>(`${base}/dashboard/spending-by-category?year=${year}&month=${month}${acctQ}`),
       api.get<{ day: number; total: number }[]>(`${base}/dashboard/daily-spending?year=${year}&month=${month}${acctQ}`),
       api.get<CategorySpend[]>(`${base}/dashboard/spending-by-category?year=${prevYear}&month=${prevMonth}${acctQ}`),
@@ -626,8 +626,8 @@ export default function ReportsPage() {
     .filter((s) => s.cat);
 
   const totalMonthSpend = spending.reduce((s, i) => s + i.total, 0);
-  const savingsRate = summary && summary.income > 0
-    ? Math.round((summary.saved / summary.income) * 100)
+  const savingsRate = summary && summary.income.amount > 0
+    ? Math.round((summary.saved.amount / summary.income.amount) * 100)
     : null;
 
   // Compute MoM change for current month vs previous
@@ -635,7 +635,7 @@ export default function ReportsPage() {
   const prevMonthIdx = trends.findIndex((t) => t.year === year && t.monthNum === month) - 1;
   const prevMonthTrend = prevMonthIdx >= 0 ? trends[prevMonthIdx] : null;
   const expenseMoM = prevMonthTrend && prevMonthTrend.expense > 0
-    ? ((((summary?.expense ?? 0) - prevMonthTrend.expense) / prevMonthTrend.expense) * 100)
+    ? ((((summary?.expense.amount ?? 0) - prevMonthTrend.expense) / prevMonthTrend.expense) * 100)
     : null;
 
   const actions = (
@@ -673,17 +673,17 @@ export default function ReportsPage() {
             {[
               {
                 label: "Income", icon: "south_west", color: "#34D399",
-                value: summary ? formatCurrency(summary.income) : "—",
-                sub: currentMonthTrend && prevMonthTrend
-                  ? `${((summary?.income ?? 0) - prevMonthTrend.income >= 0 ? "+" : "")}${formatCurrency((summary?.income ?? 0) - prevMonthTrend.income)} MoM`
+                value: summary ? formatMoney(summary.income) : "—",
+                sub: currentMonthTrend && prevMonthTrend && summary
+                  ? `${(summary.income.amount - prevMonthTrend.income >= 0 ? "+" : "")}${formatMoney({ ...summary.income, amount: summary.income.amount - prevMonthTrend.income })} MoM`
                   : undefined,
                 subColor: currentMonthTrend && prevMonthTrend
-                  ? ((summary?.income ?? 0) >= prevMonthTrend.income ? "#34D399" : "#FB7185")
+                  ? ((summary?.income.amount ?? 0) >= prevMonthTrend.income ? "#34D399" : "#FB7185")
                   : "#5B6573",
               },
               {
                 label: "Expenses", icon: "north_east", color: "#FB7185",
-                value: summary ? formatCurrency(summary.expense) : "—",
+                value: summary ? formatMoney(summary.expense) : "—",
                 sub: expenseMoM != null
                   ? `${expenseMoM >= 0 ? "+" : ""}${expenseMoM.toFixed(1)}% vs last month`
                   : undefined,
@@ -693,7 +693,7 @@ export default function ReportsPage() {
               },
               {
                 label: "Saved", icon: "savings", color: "#818CF8",
-                value: summary ? formatCurrency(summary.saved) : "—",
+                value: summary ? formatMoney(summary.saved) : "—",
                 sub: savingsRate != null ? `${savingsRate}% savings rate` : undefined,
                 subColor: savingsRate != null
                   ? (savingsRate >= 20 ? "#34D399" : savingsRate >= 0 ? "#FBBF24" : "#FB7185")
@@ -793,7 +793,7 @@ export default function ReportsPage() {
           </div>
 
           {/* Savings rate trend */}
-          {!loadingTrends && trends.some((t) => t.income > 0) && (
+          {!loadingTrends && trends.some((t) => t.income > 0) && ( // income here is raw number from MonthEntry
             <div className="rounded-[18px] p-5" style={{ background: "#141925", border: "1px solid rgba(255,255,255,0.06)" }}>
               <div className="flex items-center justify-between mb-1">
                 <div className="text-[13px] font-semibold">Savings Rate Trend</div>
@@ -820,19 +820,19 @@ export default function ReportsPage() {
           )}
 
           {/* Cash flow waterfall */}
-          {summary && (summary.income > 0 || summary.expense > 0) && (
+          {summary && (summary.income.amount > 0 || summary.expense.amount > 0) && (
             <div className="rounded-[18px] p-5" style={{ background: "#141925", border: "1px solid rgba(255,255,255,0.06)" }}>
               <div className="text-[13px] font-semibold mb-1">Cash Flow — {MONTH_NAMES[month - 1]} {year}</div>
               <div className="text-[11px] text-[#4B5462] mb-3">Income, expenses, and net for this month</div>
               <div className="flex items-center">
                 <div className="flex-1">
-                  <CashFlowWaterfall income={summary.income} expense={summary.expense} saved={summary.saved} />
+                  <CashFlowWaterfall income={summary.income.amount} expense={summary.expense.amount} saved={summary.saved.amount} />
                 </div>
                 <div className="flex flex-col gap-3 ml-8 flex-shrink-0">
                   {[
-                    { label: "Income", value: summary.income, color: "#34D399" },
-                    { label: "Expenses", value: summary.expense, color: "#FB7185" },
-                    { label: summary.saved >= 0 ? "Saved" : "Deficit", value: Math.abs(summary.saved), color: summary.saved >= 0 ? "#818CF8" : "#F97316" },
+                    { label: "Income", value: summary.income.amount, color: "#34D399" },
+                    { label: "Expenses", value: summary.expense.amount, color: "#FB7185" },
+                    { label: summary.saved.amount >= 0 ? "Saved" : "Deficit", value: Math.abs(summary.saved.amount), color: summary.saved.amount >= 0 ? "#818CF8" : "#F97316" },
                   ].map((r) => (
                     <div key={r.label} className="flex items-center gap-2.5">
                       <div className="w-2.5 h-2.5 rounded-sm flex-shrink-0" style={{ background: r.color }} />
@@ -853,9 +853,9 @@ export default function ReportsPage() {
           <div className="rounded-[18px] p-5" style={{ background: "#141925", border: "1px solid rgba(255,255,255,0.06)" }}>
             <div className="flex items-center justify-between mb-1">
               <div className="text-[13px] font-semibold">Daily Spending — {MONTH_NAMES[month - 1]} {year}</div>
-              {summary && summary.expense > 0 && (
+              {summary && summary.expense.amount > 0 && (
                 <span className="text-[12px] font-semibold tabular" style={{ color: "#FB7185" }}>
-                  {formatCurrency(summary.expense)} total
+                  {formatMoney(summary.expense)} total
                 </span>
               )}
             </div>

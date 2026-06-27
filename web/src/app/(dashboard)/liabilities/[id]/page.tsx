@@ -4,14 +4,14 @@ import { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { api } from "@/lib/api";
 import { getWorkspaceId } from "@/lib/auth";
-import { formatCurrency } from "@/lib/utils";
+import { formatMoney, MoneyDto } from "@/lib/utils";
 import { Topbar } from "@/components/layout/Topbar";
 import { Icon } from "@/components/ui/Icon";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
 interface HistoryPoint {
-  balance: number;
+  balance: MoneyDto;
   createdAt: string;
 }
 
@@ -20,11 +20,10 @@ interface LiabilityDetail {
   name: string;
   type: number;
   lenderName?: string;
-  originalAmount: number;
-  currentBalance: number;
-  currency: string;
+  originalAmount: MoneyDto;
+  currentBalance: MoneyDto;
   interestRate?: number;
-  monthlyPayment?: number;
+  monthlyPayment?: MoneyDto;
   startDate?: string;
   dueDate?: string;
   isShared: boolean;
@@ -50,7 +49,7 @@ const TYPE_COLORS = [
 
 // ── Paydown chart ─────────────────────────────────────────────────────────────
 
-function PaydownChart({ history, originalAmount }: { history: HistoryPoint[]; originalAmount: number }) {
+function PaydownChart({ history, originalAmount }: { history: HistoryPoint[]; originalAmount: MoneyDto }) {
   const [hover, setHover] = useState<number | null>(null);
   if (history.length < 2) {
     return (
@@ -62,13 +61,13 @@ function PaydownChart({ history, originalAmount }: { history: HistoryPoint[]; or
 
   const W = 560, H = 120, PAD_X = 12, PAD_Y = 12;
   const n = history.length;
-  const maxV = Math.max(...history.map((h) => h.balance), originalAmount);
+  const maxV = Math.max(...history.map((h) => h.balance.amount), originalAmount.amount);
   const minV = 0;
 
   function xOf(i: number) { return PAD_X + (i / (n - 1)) * (W - PAD_X * 2); }
   function yOf(v: number) { return PAD_Y + (1 - (v - minV) / (maxV - minV || 1)) * (H - PAD_Y * 2); }
 
-  const pts = history.map((h, i) => ({ x: xOf(i), y: yOf(h.balance), ...h }));
+  const pts = history.map((h, i) => ({ x: xOf(i), y: yOf(h.balance.amount), ...h }));
   const line = pts.map((p, i) => `${i === 0 ? "M" : "L"}${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
   const area = `${line} L${pts[n - 1].x.toFixed(1)},${H} L${pts[0].x.toFixed(1)},${H} Z`;
   const hoverPt = hover !== null ? pts[hover] : null;
@@ -116,7 +115,7 @@ function PaydownChart({ history, originalAmount }: { history: HistoryPoint[]; or
                 y={Math.max(hoverPt.y - 52, 0) + 30}
                 fontSize="10" fontWeight="700" fill="#FB7185"
               >
-                {formatCurrency(hoverPt.balance)}
+                {formatMoney(hoverPt.balance)}
               </text>
             </g>
           </>
@@ -166,14 +165,13 @@ export default function LiabilityDetailPage() {
   const color = liability ? (TYPE_COLORS[liability.type] ?? "#FB7185") : "#FB7185";
   const icon = liability ? (TYPE_ICONS[liability.type] ?? "category") : "credit_card";
 
-  const paid = liability ? liability.originalAmount - liability.currentBalance : 0;
-  const paidPct = liability && liability.originalAmount > 0
-    ? Math.round((paid / liability.originalAmount) * 100)
+  const paid = liability ? liability.originalAmount.amount - liability.currentBalance.amount : 0;
+  const paidPct = liability && liability.originalAmount.amount > 0
+    ? Math.round((paid / liability.originalAmount.amount) * 100)
     : 0;
 
-  // Months to payoff at current monthly payment (simple linear projection)
-  const monthsLeft = liability?.monthlyPayment && liability.monthlyPayment > 0
-    ? Math.ceil(liability.currentBalance / liability.monthlyPayment)
+  const monthsLeft = liability?.monthlyPayment && liability.monthlyPayment.amount > 0
+    ? Math.ceil(liability.currentBalance.amount / liability.monthlyPayment.amount)
     : null;
   const payoffDate = monthsLeft != null
     ? new Date(Date.now() + monthsLeft * 30 * 86400000).toLocaleDateString("en-US", { month: "long", year: "numeric" })
@@ -222,10 +220,10 @@ export default function LiabilityDetailPage() {
                     {liability.lenderName && ` · ${liability.lenderName}`}
                   </div>
                   <div className="text-[36px] font-[800] tabular leading-tight mt-1" style={{ fontFamily: "'Inter Tight'", color: "#FB7185" }}>
-                    {formatCurrency(liability.currentBalance, liability.currency)}
+                    {formatMoney(liability.currentBalance)}
                   </div>
                   <div className="text-[13px] text-[#5B6573] mt-1">
-                    {formatCurrency(paid, liability.currency)} paid of {formatCurrency(liability.originalAmount, liability.currency)}
+                    {formatMoney({ ...liability.currentBalance, amount: paid })} paid of {formatMoney(liability.originalAmount)}
                   </div>
                   {/* Payoff progress bar */}
                   <div className="mt-3">
@@ -250,7 +248,7 @@ export default function LiabilityDetailPage() {
                 <StatChip label="Interest Rate" value={`${liability.interestRate.toFixed(2)}% APR`} />
               )}
               {liability.monthlyPayment != null && (
-                <StatChip label="Monthly Payment" value={formatCurrency(liability.monthlyPayment, liability.currency)} />
+                <StatChip label="Monthly Payment" value={formatMoney(liability.monthlyPayment)} />
               )}
               {monthsLeft != null && (
                 <StatChip label="Months Remaining" value={String(monthsLeft)} />
@@ -274,7 +272,7 @@ export default function LiabilityDetailPage() {
                 <div className="flex flex-col divide-y" style={{ borderColor: "rgba(255,255,255,0.05)" }}>
                   {[...liability.balanceHistory].reverse().map((h, i) => {
                     const prev = [...liability.balanceHistory].reverse()[i + 1];
-                    const delta = prev ? h.balance - prev.balance : null;
+                    const delta = prev ? h.balance.amount - prev.balance.amount : null;
                     return (
                       <div key={h.createdAt + i} className="flex items-center justify-between py-3">
                         <div className="text-[12.5px] text-[#98A2B3]">
@@ -286,11 +284,11 @@ export default function LiabilityDetailPage() {
                               className="text-[11.5px] font-medium"
                               style={{ color: delta < 0 ? "#34D399" : "#FB7185" }}
                             >
-                              {delta < 0 ? "" : "+"}{formatCurrency(delta, liability.currency)}
+                              {delta < 0 ? "" : "+"}{formatMoney({ ...h.balance, amount: delta })}
                             </span>
                           )}
                           <span className="text-[13px] font-[700] tabular" style={{ fontFamily: "'Inter Tight'", color: "#FB7185" }}>
-                            {formatCurrency(h.balance, liability.currency)}
+                            {formatMoney(h.balance)}
                           </span>
                         </div>
                       </div>

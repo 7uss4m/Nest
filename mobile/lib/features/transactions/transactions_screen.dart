@@ -193,7 +193,7 @@ class _TxTile extends StatelessWidget {
               ]),
             ),
             Text(
-              '$sign${formatCurrency(tx.amount)}',
+              '$sign${formatMoney(tx.amount)}',
               style: TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: typeColor),
             ),
           ],

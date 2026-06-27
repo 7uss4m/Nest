@@ -271,6 +271,13 @@ class NestApi {
     parse: (_) {},
   );
 
+  // ── Currencies ───────────────────────────────────────────────────────────────
+
+  Future<List<WorkspaceCurrencyDto>> getCurrencies(String wsId) => _req(
+    'GET', '/api/workspaces/$wsId/currencies',
+    parse: (d) => (d as List).map((e) => WorkspaceCurrencyDto.fromJson(e as Map<String, dynamic>)).toList(),
+  );
+
   // ── Net Worth ────────────────────────────────────────────────────────────────
 
   Future<List<NetWorthEntry>> getNetWorthHistory(String wsId) => _req(
@@ -306,29 +313,55 @@ class NestApi {
 
 // ── DTOs ──────────────────────────────────────────────────────────────────────
 
+class MoneyDto {
+  final double amount;
+  final String currencyCode;
+  final int decimalPlaces;
+  const MoneyDto({required this.amount, required this.currencyCode, required this.decimalPlaces});
+  factory MoneyDto.fromJson(Map<String, dynamic> j) => MoneyDto(
+    amount: (j['amount'] as num).toDouble(),
+    currencyCode: j['currencyCode'] as String? ?? 'USD',
+    decimalPlaces: (j['decimalPlaces'] as num?)?.toInt() ?? 2,
+  );
+  static MoneyDto? fromJsonNullable(dynamic raw) =>
+      raw == null ? null : MoneyDto.fromJson(raw as Map<String, dynamic>);
+}
+
+class WorkspaceCurrencyDto {
+  final String code;
+  final String symbol;
+  final int decimalPlaces;
+  final bool isDefault;
+  const WorkspaceCurrencyDto({required this.code, required this.symbol, required this.decimalPlaces, required this.isDefault});
+  factory WorkspaceCurrencyDto.fromJson(Map<String, dynamic> j) => WorkspaceCurrencyDto(
+    code: j['code'] as String,
+    symbol: j['symbol'] as String,
+    decimalPlaces: (j['decimalPlaces'] as num).toInt(),
+    isDefault: j['isDefault'] as bool? ?? false,
+  );
+}
+
 class AssetDto {
   final String id;
   final String name;
   final String? description;
   final int assetClass; // 0=Physical, 1=Financial
-  final int assetType;  // 0=RealEstate,1=Vehicle,2=Electronics,3=Valuables, 4=Savings,5=Investment,6=Crypto,7=Business,8=LoanGiven,9=Other
-  final double currentValue;
-  final String currency;
+  final int assetType;  // 0=RealEstate,1=Vehicle,2=Electronics,3=Valuables,4=Savings,5=Investment,6=Crypto,7=Business,8=LoanGiven,9=Other
+  final MoneyDto currentValue;
   final String? purchaseDate;
-  final double? purchasePrice;
+  final MoneyDto? purchasePrice;
   final String? institution;
   final bool isShared;
-  AssetDto({required this.id, required this.name, this.description, required this.assetClass, required this.assetType, required this.currentValue, required this.currency, this.purchaseDate, this.purchasePrice, this.institution, required this.isShared});
+  AssetDto({required this.id, required this.name, this.description, required this.assetClass, required this.assetType, required this.currentValue, this.purchaseDate, this.purchasePrice, this.institution, required this.isShared});
   factory AssetDto.fromJson(Map<String, dynamic> j) => AssetDto(
     id: j['id'] as String,
     name: j['name'] as String,
     description: j['description'] as String?,
     assetClass: (j['assetClass'] as num).toInt(),
     assetType: (j['assetType'] as num).toInt(),
-    currentValue: (j['currentValue'] as num).toDouble(),
-    currency: j['currency'] as String? ?? 'USD',
+    currentValue: MoneyDto.fromJson(j['currentValue'] as Map<String, dynamic>),
     purchaseDate: j['purchaseDate'] as String?,
-    purchasePrice: j['purchasePrice'] != null ? (j['purchasePrice'] as num).toDouble() : null,
+    purchasePrice: MoneyDto.fromJsonNullable(j['purchasePrice']),
     institution: j['institution'] as String?,
     isShared: j['isShared'] as bool? ?? false,
   );
@@ -339,25 +372,23 @@ class LiabilityDto {
   final String name;
   final int type; // 0=Mortgage,1=Vehicle,2=Personal,3=CreditCard,4=Student,5=Business,6=OwedToPerson,7=Other
   final String? lenderName;
-  final double originalAmount;
-  final double currentBalance;
-  final String currency;
+  final MoneyDto originalAmount;
+  final MoneyDto currentBalance;
   final double? interestRate;
-  final double? monthlyPayment;
+  final MoneyDto? monthlyPayment;
   final String? startDate;
   final String? dueDate;
   final bool isShared;
-  LiabilityDto({required this.id, required this.name, required this.type, this.lenderName, required this.originalAmount, required this.currentBalance, required this.currency, this.interestRate, this.monthlyPayment, this.startDate, this.dueDate, required this.isShared});
+  LiabilityDto({required this.id, required this.name, required this.type, this.lenderName, required this.originalAmount, required this.currentBalance, this.interestRate, this.monthlyPayment, this.startDate, this.dueDate, required this.isShared});
   factory LiabilityDto.fromJson(Map<String, dynamic> j) => LiabilityDto(
     id: j['id'] as String,
     name: j['name'] as String,
     type: (j['type'] as num).toInt(),
     lenderName: j['lenderName'] as String?,
-    originalAmount: (j['originalAmount'] as num).toDouble(),
-    currentBalance: (j['currentBalance'] as num).toDouble(),
-    currency: j['currency'] as String? ?? 'USD',
+    originalAmount: MoneyDto.fromJson(j['originalAmount'] as Map<String, dynamic>),
+    currentBalance: MoneyDto.fromJson(j['currentBalance'] as Map<String, dynamic>),
     interestRate: j['interestRate'] != null ? (j['interestRate'] as num).toDouble() : null,
-    monthlyPayment: j['monthlyPayment'] != null ? (j['monthlyPayment'] as num).toDouble() : null,
+    monthlyPayment: MoneyDto.fromJsonNullable(j['monthlyPayment']),
     startDate: j['startDate'] as String?,
     dueDate: j['dueDate'] as String?,
     isShared: j['isShared'] as bool? ?? false,
@@ -413,9 +444,9 @@ class WorkspaceDto {
 }
 
 class DashboardSummary {
-  final double income;
-  final double expense;
-  final double saved;
+  final MoneyDto income;
+  final MoneyDto expense;
+  final MoneyDto saved;
   final List<AccountDto> accounts;
   final List<UpcomingPaymentDto> upcomingPayments;
   DashboardSummary({
@@ -423,9 +454,9 @@ class DashboardSummary {
     required this.accounts, required this.upcomingPayments,
   });
   factory DashboardSummary.fromJson(Map<String, dynamic> j) => DashboardSummary(
-    income: (j['income'] as num).toDouble(),
-    expense: (j['expense'] as num).toDouble(),
-    saved: (j['saved'] as num).toDouble(),
+    income: MoneyDto.fromJson(j['income'] as Map<String, dynamic>),
+    expense: MoneyDto.fromJson(j['expense'] as Map<String, dynamic>),
+    saved: MoneyDto.fromJson(j['saved'] as Map<String, dynamic>),
     accounts: (j['accounts'] as List).map((e) => AccountDto.fromJson(e as Map<String, dynamic>)).toList(),
     upcomingPayments: (j['upcomingPayments'] as List).map((e) => UpcomingPaymentDto.fromJson(e as Map<String, dynamic>)).toList(),
   );
@@ -438,7 +469,7 @@ class AccountDto {
   final String currency;
   final String color;
   final String icon;
-  final double balance;
+  final MoneyDto balance;
   AccountDto({required this.id, required this.name, required this.type, required this.currency, required this.color, required this.icon, required this.balance});
   factory AccountDto.fromJson(Map<String, dynamic> j) => AccountDto(
     id: j['id'] as String,
@@ -447,7 +478,7 @@ class AccountDto {
     currency: j['currency'] as String? ?? 'USD',
     color: j['color'] as String? ?? '#6366F1',
     icon: j['icon'] as String? ?? 'account_balance',
-    balance: (j['balance'] as num? ?? 0).toDouble(),
+    balance: MoneyDto.fromJson(j['balance'] as Map<String, dynamic>),
   );
 }
 
@@ -479,7 +510,7 @@ class CategoryDto {
 
 class TransactionDto {
   final String id;
-  final double amount;
+  final MoneyDto amount;
   final int type; // 0=Income, 1=Expense, 2=Transfer
   final String date; // ISO date string
   final String? note;
@@ -489,7 +520,7 @@ class TransactionDto {
   TransactionDto({required this.id, required this.amount, required this.type, required this.date, this.note, this.payee, this.categoryId, required this.accountId});
   factory TransactionDto.fromJson(Map<String, dynamic> j) => TransactionDto(
     id: j['id'] as String,
-    amount: (j['amount'] as num).toDouble(),
+    amount: MoneyDto.fromJson(j['amount'] as Map<String, dynamic>),
     type: (j['type'] as num).toInt(),
     date: j['date'] as String,
     note: j['note'] as String?,
@@ -533,13 +564,13 @@ class CreateTransactionDto {
 class BudgetDto {
   final String id;
   final String categoryId;
-  final double amountLimit;
+  final MoneyDto amountLimit;
   final bool rollover;
   BudgetDto({required this.id, required this.categoryId, required this.amountLimit, required this.rollover});
   factory BudgetDto.fromJson(Map<String, dynamic> j) => BudgetDto(
     id: j['id'] as String,
     categoryId: j['categoryId'] as String,
-    amountLimit: (j['amountLimit'] as num).toDouble(),
+    amountLimit: MoneyDto.fromJson(j['amountLimit'] as Map<String, dynamic>),
     rollover: j['rollover'] as bool? ?? false,
   );
 }
@@ -547,17 +578,15 @@ class BudgetDto {
 class PlannedPaymentDto {
   final String id;
   final String name;
-  final double amount;
-  final String currency;
+  final MoneyDto amount;
   final String dueDate;
   final String? icon;
   final bool isPaid;
-  PlannedPaymentDto({required this.id, required this.name, required this.amount, required this.currency, required this.dueDate, this.icon, required this.isPaid});
+  PlannedPaymentDto({required this.id, required this.name, required this.amount, required this.dueDate, this.icon, required this.isPaid});
   factory PlannedPaymentDto.fromJson(Map<String, dynamic> j) => PlannedPaymentDto(
     id: j['id'] as String,
     name: j['name'] as String,
-    amount: (j['amount'] as num).toDouble(),
-    currency: j['currency'] as String? ?? 'USD',
+    amount: MoneyDto.fromJson(j['amount'] as Map<String, dynamic>),
     dueDate: j['dueDate'] as String,
     icon: j['icon'] as String?,
     isPaid: j['isPaid'] as bool? ?? false,
@@ -567,16 +596,14 @@ class PlannedPaymentDto {
 class UpcomingPaymentDto {
   final String id;
   final String name;
-  final double amount;
-  final String currency;
+  final MoneyDto amount;
   final String dueDate;
   final String? icon;
-  UpcomingPaymentDto({required this.id, required this.name, required this.amount, required this.currency, required this.dueDate, this.icon});
+  UpcomingPaymentDto({required this.id, required this.name, required this.amount, required this.dueDate, this.icon});
   factory UpcomingPaymentDto.fromJson(Map<String, dynamic> j) => UpcomingPaymentDto(
     id: j['id'] as String,
     name: j['name'] as String,
-    amount: (j['amount'] as num).toDouble(),
-    currency: j['currency'] as String? ?? 'USD',
+    amount: MoneyDto.fromJson(j['amount'] as Map<String, dynamic>),
     dueDate: j['dueDate'] as String,
     icon: j['icon'] as String?,
   );
@@ -636,17 +663,20 @@ class AuthException extends ApiException {
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-String formatCurrency(double amount, [String currency = 'USD']) {
+String formatMoney(MoneyDto money) =>
+    formatCurrency(money.amount, money.currencyCode, money.decimalPlaces);
+
+String formatCurrency(double amount, [String currency = 'USD', int decimals = 2]) {
   final sign = amount < 0 ? '-' : '';
   final abs = amount.abs();
-  final str = abs.toStringAsFixed(2);
+  final str = abs.toStringAsFixed(decimals);
   final parts = str.split('.');
   final intPart = parts[0].replaceAllMapped(
     RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
     (m) => '${m[1]},',
   );
   final symbol = _currencySymbol(currency);
-  return '$sign$symbol$intPart.${parts[1]}';
+  return decimals > 0 ? '$sign$symbol$intPart.${parts[1]}' : '$sign$symbol$intPart';
 }
 
 String _currencySymbol(String code) {
@@ -655,6 +685,7 @@ String _currencySymbol(String code) {
     case 'EUR': return '€';
     case 'GBP': return '£';
     case 'JPY': return '¥';
+    case 'SYP': return 'ل.س';
     default: return '$code ';
   }
 }

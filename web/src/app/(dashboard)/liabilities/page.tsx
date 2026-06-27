@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { getWorkspaceId } from "@/lib/auth";
-import { formatCurrency } from "@/lib/utils";
+import { formatMoney, MoneyDto } from "@/lib/utils";
 import { Topbar } from "@/components/layout/Topbar";
 import { Drawer } from "@/components/ui/Drawer";
 import { Icon } from "@/components/ui/Icon";
@@ -27,11 +27,10 @@ interface Liability {
   name: string;
   type: number;
   lenderName?: string;
-  originalAmount: number;
-  currentBalance: number;
-  currency: string;
+  originalAmount: MoneyDto;
+  currentBalance: MoneyDto;
   interestRate?: number;
-  monthlyPayment?: number;
+  monthlyPayment?: MoneyDto;
   startDate?: string;
   dueDate?: string;
   isShared: boolean;
@@ -49,8 +48,8 @@ function LiabilityRow({ liability, onDelete, onUpdateBalance }: LiabilityRowProp
   const [confirming, setConfirming] = useState(false);
   const color = LIABILITY_TYPE_COLORS[liability.type] ?? "#98A2B3";
   const icon = LIABILITY_TYPE_ICONS[liability.type] ?? "category";
-  const paidOff = liability.originalAmount > 0
-    ? Math.min(((liability.originalAmount - liability.currentBalance) / liability.originalAmount) * 100, 100)
+  const paidOff = liability.originalAmount.amount > 0
+    ? Math.min(((liability.originalAmount.amount - liability.currentBalance.amount) / liability.originalAmount.amount) * 100, 100)
     : 0;
 
   return (
@@ -121,11 +120,11 @@ function LiabilityRow({ liability, onDelete, onUpdateBalance }: LiabilityRowProp
       <div className="flex items-center justify-between mb-2">
         <div>
           <div className="text-[20px] font-[700] tabular" style={{ fontFamily: "'Inter Tight'", color: "#FB7185" }}>
-            {formatCurrency(liability.currentBalance, liability.currency)}
+            {formatMoney(liability.currentBalance)}
           </div>
           <div className="text-[11.5px] text-[#5B6573]">
-            of {formatCurrency(liability.originalAmount, liability.currency)} original
-            {liability.monthlyPayment && ` · ${formatCurrency(liability.monthlyPayment)}/mo`}
+            of {formatMoney(liability.originalAmount)} original
+            {liability.monthlyPayment && ` · ${formatMoney(liability.monthlyPayment)}/mo`}
           </div>
         </div>
         <div className="text-right">
@@ -133,7 +132,7 @@ function LiabilityRow({ liability, onDelete, onUpdateBalance }: LiabilityRowProp
             {paidOff.toFixed(0)}% paid
           </div>
           <div className="text-[11.5px] text-[#5B6573]">
-            {formatCurrency(liability.originalAmount - liability.currentBalance, liability.currency)} paid off
+            {formatMoney({ ...liability.currentBalance, amount: liability.originalAmount.amount - liability.currentBalance.amount })} paid off
           </div>
         </div>
       </div>
@@ -251,12 +250,13 @@ export default function LiabilitiesPage() {
     } catch { /* ignore */ }
   }
 
-  const totalDebt = liabilities.reduce((s, l) => s + l.currentBalance, 0);
-  const totalOriginal = liabilities.reduce((s, l) => s + l.originalAmount, 0);
+  const totalDebt = liabilities.reduce((s, l) => s + l.currentBalance.amount, 0);
+  const totalOriginal = liabilities.reduce((s, l) => s + l.originalAmount.amount, 0);
+  const refMoney = liabilities[0]?.currentBalance ?? { amount: 0, currencyCode: "USD", decimalPlaces: 2 };
 
   const byType = LIABILITY_TYPE_LABELS.map((label, i) => ({
     label, count: liabilities.filter((l) => l.type === i).length,
-    value: liabilities.filter((l) => l.type === i).reduce((s, l) => s + l.currentBalance, 0),
+    value: liabilities.filter((l) => l.type === i).reduce((s, l) => s + l.currentBalance.amount, 0),
     color: LIABILITY_TYPE_COLORS[i],
   })).filter((t) => t.count > 0);
 
@@ -284,10 +284,10 @@ export default function LiabilitiesPage() {
             <div className="flex-1">
               <div className="text-[12px] text-[#98A2B3] mb-1">Total Debt</div>
               <div className="text-[32px] font-[800] tabular" style={{ fontFamily: "'Inter Tight'", color: "#FB7185" }}>
-                {formatCurrency(totalDebt)}
+                {formatMoney({ ...refMoney, amount: totalDebt })}
               </div>
               <div className="text-[12px] mt-1" style={{ color: "#34D399" }}>
-                {formatCurrency(totalOriginal - totalDebt)} paid off overall
+                {formatMoney({ ...refMoney, amount: totalOriginal - totalDebt })} paid off overall
               </div>
             </div>
             {byType.length > 0 && (
@@ -296,7 +296,7 @@ export default function LiabilitiesPage() {
                   <div key={t.label} className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: t.color }} />
                     <span className="text-[11.5px] text-[#98A2B3]">{t.label}</span>
-                    <span className="text-[11.5px] font-semibold tabular ml-auto" style={{ color: t.color }}>{formatCurrency(t.value)}</span>
+                    <span className="text-[11.5px] font-semibold tabular ml-auto" style={{ color: t.color }}>{formatMoney({ ...refMoney, amount: t.value })}</span>
                   </div>
                 ))}
               </div>
@@ -334,7 +334,7 @@ export default function LiabilitiesPage() {
                 key={l.id}
                 liability={l}
                 onDelete={handleDelete}
-                onUpdateBalance={(liability) => { setBalanceDrawerLiability(liability); setNewBalance(String(liability.currentBalance)); }}
+                onUpdateBalance={(liability) => { setBalanceDrawerLiability(liability); setNewBalance(String(liability.currentBalance.amount)); }}
               />
             ))}
           </div>
@@ -546,7 +546,7 @@ export default function LiabilitiesPage() {
         <form id="balance-form" onSubmit={handleUpdateBalance} className="flex flex-col gap-5">
           {balanceDrawerLiability && (
             <div className="text-[12.5px] text-[#5B6573]">
-              Current balance: <span className="text-[#EEF1F6] font-semibold tabular">{formatCurrency(balanceDrawerLiability.currentBalance, balanceDrawerLiability.currency)}</span>
+              Current balance: <span className="text-[#EEF1F6] font-semibold tabular">{formatMoney(balanceDrawerLiability.currentBalance)}</span>
             </div>
           )}
           <div className="flex flex-col gap-[6px]">

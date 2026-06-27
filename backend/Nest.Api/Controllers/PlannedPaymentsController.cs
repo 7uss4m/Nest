@@ -2,7 +2,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using Nest.Api.Helpers;
 using Nest.Application.Common;
+using Nest.Application.Currencies;
 using Nest.Domain.Entities;
 
 namespace Nest.Api.Controllers;
@@ -31,7 +33,7 @@ public class PlannedPaymentsController(INestDbContext db) : ControllerBase
             query = query.Where(p => p.DueDate >= today && p.DueDate <= cutoff);
         }
 
-        var items = await query
+        var raw = await query
             .OrderBy(p => p.DueDate)
             .Select(p => new
             {
@@ -40,7 +42,12 @@ public class PlannedPaymentsController(INestDbContext db) : ControllerBase
             })
             .ToListAsync();
 
-        return Ok(items);
+        var decimals = await CurrencyHelper.LoadDecimalsAsync(db, workspaceId);
+        return Ok(raw.Select(p => new
+        {
+            p.Id, p.Name, p.DueDate, p.CategoryId, p.IsPaid, p.SkippedUntil, p.Note, p.Icon, p.CreatedAt,
+            Amount = CurrencyHelper.ToMoney(p.Amount, p.Currency, decimals),
+        }));
     }
 
     [HttpPost]

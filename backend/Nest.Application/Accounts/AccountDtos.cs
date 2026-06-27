@@ -1,3 +1,4 @@
+using Nest.Application.Currencies;
 using Nest.Domain.Enums;
 
 namespace Nest.Application.Accounts;
@@ -25,7 +26,7 @@ public record AccountDto(
     string Color,
     string Icon,
     bool IsShared,
-    decimal Balance,
+    MoneyDto Balance,
     DateTime CreatedAt);
 
 public record TransferRequest(

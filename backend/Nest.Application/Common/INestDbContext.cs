@@ -7,6 +7,7 @@ public interface INestDbContext
 {
     DbSet<Workspace> Workspaces { get; }
     DbSet<WorkspaceMember> WorkspaceMembers { get; }
+    DbSet<WorkspaceCurrency> WorkspaceCurrencies { get; }
     DbSet<Account> Accounts { get; }
     DbSet<Category> Categories { get; }
     DbSet<Transaction> Transactions { get; }

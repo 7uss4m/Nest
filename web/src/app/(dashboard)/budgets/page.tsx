@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { api } from "@/lib/api";
 import { getWorkspaceId } from "@/lib/auth";
-import { formatCurrency } from "@/lib/utils";
+import { formatMoney, MoneyDto } from "@/lib/utils";
 import { Topbar } from "@/components/layout/Topbar";
 import { Drawer } from "@/components/ui/Drawer";
 import { Icon } from "@/components/ui/Icon";
@@ -11,7 +11,7 @@ import { Icon } from "@/components/ui/Icon";
 interface Budget {
   id: string;
   period: number;
-  amountLimit: number;
+  amountLimit: MoneyDto;
   rollover: boolean;
   categoryId: string;
 }
@@ -38,8 +38,9 @@ interface BudgetRowProps {
 
 function BudgetRow({ budget, cat, spent, onDelete }: BudgetRowProps) {
   const [confirming, setConfirming] = useState(false);
-  const pct = Math.min((spent / budget.amountLimit) * 100, 100);
-  const over = spent > budget.amountLimit;
+  const limitAmount = budget.amountLimit.amount;
+  const pct = Math.min((spent / limitAmount) * 100, 100);
+  const over = spent > limitAmount;
 
   return (
     <div className="p-5 rounded-[16px]" style={{ background: "#141925", border: "1px solid rgba(255,255,255,0.06)" }}>
@@ -56,9 +57,9 @@ function BudgetRow({ budget, cat, spent, onDelete }: BudgetRowProps) {
             <span className="text-[10px] font-bold px-[7px] py-[2px] rounded-full" style={{ color: "#FB7185", background: "rgba(251,113,133,0.14)" }}>OVER</span>
           )}
           <span className="text-[13px] tabular font-semibold" style={{ color: over ? "#FB7185" : "#EEF1F6" }}>
-            {formatCurrency(spent)}
+            {formatMoney({ ...budget.amountLimit, amount: spent })}
           </span>
-          <span className="text-[13px] text-[#5B6573]">/ {formatCurrency(budget.amountLimit)}</span>
+          <span className="text-[13px] text-[#5B6573]">/ {formatMoney(budget.amountLimit)}</span>
           {!confirming ? (
             <button onClick={() => setConfirming(true)} className="w-7 h-7 flex items-center justify-center rounded-[7px] ml-1 hover:bg-[rgba(251,113,133,0.14)] transition-colors" style={{ color: "#5B6573" }}>
               <Icon name="delete" size={15} />
@@ -149,7 +150,8 @@ export default function BudgetsPage() {
   const budgetCategoryIds = new Set(budgets.map((b) => b.categoryId));
   const availableCategories = expenseCategories.filter((c) => !budgetCategoryIds.has(c.id));
 
-  const totalBudgeted = budgets.reduce((s, b) => s + b.amountLimit, 0);
+  const totalBudgeted = budgets.reduce((s, b) => s + b.amountLimit.amount, 0);
+  const defaultMoney = budgets[0]?.amountLimit ?? { amount: 0, currencyCode: "USD", decimalPlaces: 2 };
   const totalSpent = budgets.reduce((s, b) => s + (spendMap.get(b.categoryId) ?? 0), 0);
 
   const actions = (
@@ -171,9 +173,9 @@ export default function BudgetsPage() {
         {budgets.length > 0 && (
           <div className="grid grid-cols-3 gap-[18px] mb-6">
             {[
-              { label: "Total budgeted", value: formatCurrency(totalBudgeted), icon: "account_balance_wallet", color: "#818CF8" },
-              { label: "Spent this month", value: formatCurrency(totalSpent), icon: "north_east", color: "#FB7185" },
-              { label: "Remaining", value: formatCurrency(Math.max(0, totalBudgeted - totalSpent)), icon: "savings", color: "#34D399" },
+              { label: "Total budgeted", value: formatMoney({ ...defaultMoney, amount: totalBudgeted }), icon: "account_balance_wallet", color: "#818CF8" },
+              { label: "Spent this month", value: formatMoney({ ...defaultMoney, amount: totalSpent }), icon: "north_east", color: "#FB7185" },
+              { label: "Remaining", value: formatMoney({ ...defaultMoney, amount: Math.max(0, totalBudgeted - totalSpent) }), icon: "savings", color: "#34D399" },
             ].map((s) => (
               <div key={s.label} className="p-4 rounded-[16px]" style={{ background: "#141925", border: "1px solid rgba(255,255,255,0.06)" }}>
                 <div className="flex items-center gap-2 mb-2">

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { api } from "@/lib/api";
 import { getWorkspaceId } from "@/lib/auth";
-import { formatCurrency } from "@/lib/utils";
+import { formatMoney, MoneyDto } from "@/lib/utils";
 import { Topbar } from "@/components/layout/Topbar";
 import { Drawer } from "@/components/ui/Drawer";
 import { Icon } from "@/components/ui/Icon";
@@ -28,7 +28,7 @@ interface Account {
   color: string;
   icon: string;
   isShared: boolean;
-  balance: number;
+  balance: MoneyDto;
 }
 
 interface FormState {
@@ -52,7 +52,7 @@ const DEFAULT_FORM: FormState = {
 function AccountCard({ account, onDelete, onToggleShared }: { account: Account; onDelete: (id: string) => void; onToggleShared: (id: string, shared: boolean) => void }) {
   const [confirming, setConfirming] = useState(false);
   const typeLabel = ACCOUNT_TYPE_LABELS[account.type] ?? "Account";
-  const isNegative = account.balance < 0;
+  const isNegative = account.balance.amount < 0;
 
   return (
     <div
@@ -103,7 +103,7 @@ function AccountCard({ account, onDelete, onToggleShared }: { account: Account; 
         className="font-[700] text-[28px] tracking-[-0.02em] tabular"
         style={{ fontFamily: "'Inter Tight'", color: isNegative ? "#FB7185" : undefined }}
       >
-        {isNegative ? "−" : ""}{formatCurrency(Math.abs(account.balance), account.currency)}
+        {isNegative ? "−" : ""}{formatMoney({ ...account.balance, amount: Math.abs(account.balance.amount) })}
       </div>
 
       {/* Shared toggle */}
@@ -179,7 +179,7 @@ export default function AccountsPage() {
     }
   }
 
-  const totalBalance = accounts.reduce((sum, a) => sum + a.balance, 0);
+  const totalBalance = accounts.reduce((sum, a) => sum + a.balance.amount, 0);
 
   const actions = (
     <button
@@ -211,7 +211,7 @@ export default function AccountsPage() {
               className="font-[800] text-[38px] tracking-[-0.03em] mt-1 tabular"
               style={{ fontFamily: "'Inter Tight'", color: totalBalance < 0 ? "#FB7185" : "#EEF1F6" }}
             >
-              {totalBalance < 0 ? "−" : ""}{formatCurrency(Math.abs(totalBalance))}
+              {totalBalance < 0 ? "−" : ""}{accounts[0] ? formatMoney({ ...accounts[0].balance, amount: Math.abs(totalBalance) }) : "0"}
             </div>
             <div className="text-[12px] text-[#5B6573] mt-1">{accounts.length} account{accounts.length !== 1 ? "s" : ""}</div>
           </div>

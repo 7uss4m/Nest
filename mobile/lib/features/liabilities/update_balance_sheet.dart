@@ -20,7 +20,7 @@ class _UpdateBalanceSheetState extends ConsumerState<UpdateBalanceSheet> {
   @override
   void initState() {
     super.initState();
-    _ctrl = TextEditingController(text: widget.liability.currentBalance.toStringAsFixed(2));
+    _ctrl = TextEditingController(text: widget.liability.currentBalance.amount.toStringAsFixed(widget.liability.currentBalance.decimalPlaces));
   }
 
   @override
@@ -51,8 +51,8 @@ class _UpdateBalanceSheetState extends ConsumerState<UpdateBalanceSheet> {
   @override
   Widget build(BuildContext context) {
     final bottom = MediaQuery.of(context).viewInsets.bottom;
-    final paidPct = widget.liability.originalAmount > 0
-        ? ((widget.liability.originalAmount - widget.liability.currentBalance) / widget.liability.originalAmount * 100).clamp(0.0, 100.0)
+    final paidPct = widget.liability.originalAmount.amount > 0
+        ? ((widget.liability.originalAmount.amount - widget.liability.currentBalance.amount) / widget.liability.originalAmount.amount * 100).clamp(0.0, 100.0)
         : 0.0;
 
     return Padding(
@@ -86,7 +86,7 @@ class _UpdateBalanceSheetState extends ConsumerState<UpdateBalanceSheet> {
               border: Border.all(color: NestColors.expense.withOpacity(0.25)),
             ),
             child: Row(children: [
-              Text(widget.liability.currency, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: NestColors.expense, fontFamily: 'InterTight')),
+              Text(widget.liability.currentBalance.currencyCode, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: NestColors.expense, fontFamily: 'InterTight')),
               const SizedBox(width: 8),
               Expanded(
                 child: TextField(
@@ -104,7 +104,7 @@ class _UpdateBalanceSheetState extends ConsumerState<UpdateBalanceSheet> {
           const SizedBox(height: 10),
           Row(mainAxisAlignment: MainAxisAlignment.spaceBetween, children: [
             Text(
-              'Previous: ${formatCurrency(widget.liability.currentBalance, widget.liability.currency)}',
+              'Previous: ${formatMoney(widget.liability.currentBalance)}',
               style: const TextStyle(fontSize: 12, color: NestColors.text4),
             ),
             Text(

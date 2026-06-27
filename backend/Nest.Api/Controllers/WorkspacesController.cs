@@ -4,9 +4,11 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Nest.Application.Common;
+using Nest.Application.Currencies;
 using Nest.Application.Workspaces;
 using Nest.Domain.Entities;
 using Nest.Domain.Enums;
+using Nest.Domain.ValueObjects;
 using Nest.Infrastructure.Data;
 
 namespace Nest.Api.Controllers;
@@ -30,6 +32,7 @@ public class WorkspacesController(INestDbContext db, UserManager<AppUser> userMa
         var workspaces = await db.Workspaces
             .Where(w => workspaceIds.Contains(w.Id))
             .Include(w => w.Members)
+            .Include(w => w.Currencies)
             .ToListAsync();
 
         var memberUserIds = workspaces.SelectMany(w => w.Members.Select(m => m.UserId)).Distinct().ToList();
@@ -53,6 +56,9 @@ public class WorkspacesController(INestDbContext db, UserManager<AppUser> userMa
     {
         var ws = new Workspace { Name = req.Name, OwnerId = CurrentUserId };
         ws.Members.Add(new WorkspaceMember { UserId = CurrentUserId, Role = WorkspaceMemberRole.Owner });
+        ws.Currencies.Add(new WorkspaceCurrency { WorkspaceId = ws.Id, Code = Currency.USD.Code, Symbol = Currency.USD.Symbol, DecimalPlaces = Currency.USD.DecimalPlaces, IsDefault = true });
+        ws.Currencies.Add(new WorkspaceCurrency { WorkspaceId = ws.Id, Code = Currency.EUR.Code, Symbol = Currency.EUR.Symbol, DecimalPlaces = Currency.EUR.DecimalPlaces, IsDefault = false });
+        ws.Currencies.Add(new WorkspaceCurrency { WorkspaceId = ws.Id, Code = Currency.SYP.Code, Symbol = Currency.SYP.Symbol, DecimalPlaces = Currency.SYP.DecimalPlaces, IsDefault = false });
         db.Workspaces.Add(ws);
         db.Categories.AddRange(DefaultCategories.CreateFor(ws.Id));
         await db.SaveChangesAsync();
@@ -185,6 +191,7 @@ public class WorkspacesController(INestDbContext db, UserManager<AppUser> userMa
     {
         var ws = await db.Workspaces
             .Include(w => w.Members)
+            .Include(w => w.Currencies)
             .FirstOrDefaultAsync(w => w.Id == id);
         if (ws is null) return (null, null);
 
@@ -208,5 +215,10 @@ public class WorkspacesController(INestDbContext db, UserManager<AppUser> userMa
             return new WorkspaceMemberDto(
                 m.UserId, u?.DisplayName ?? "", u?.Email ?? "",
                 u?.AvatarUrl, m.Role, m.JoinedAt);
-        }).ToList());
+        }).ToList(),
+        ws.Currencies
+            .OrderByDescending(c => c.IsDefault)
+            .ThenBy(c => c.Code)
+            .Select(c => new CurrencyDto(c.Code, c.Symbol, c.DecimalPlaces, c.IsDefault))
+            .ToList());
 }

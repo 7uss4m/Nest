@@ -2,7 +2,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using Nest.Api.Helpers;
 using Nest.Application.Common;
+using Nest.Application.Currencies;
 using Nest.Domain.Entities;
 using Nest.Domain.Enums;
 
@@ -65,7 +67,7 @@ public class TransactionsController(INestDbContext db) : ControllerBase
         }
 
         var total = await query.CountAsync();
-        var items = await query
+        var rawItems = await query
             .OrderByDescending(t => t.Date)
             .ThenByDescending(t => t.CreatedAt)
             .Skip((page - 1) * pageSize)
@@ -73,10 +75,20 @@ public class TransactionsController(INestDbContext db) : ControllerBase
             .Select(t => new
             {
                 t.Id, t.Type, t.Amount,
+                CurrencyCode = t.Account.Currency,
                 t.Date, t.Note, t.Payee, t.AccountId, t.CategoryId,
                 t.IsRecurring, t.CreatedAt
             })
             .ToListAsync();
+
+        var decimals = await CurrencyHelper.LoadDecimalsAsync(db, workspaceId);
+        var items = rawItems.Select(t => new
+        {
+            t.Id, t.Type,
+            Amount = CurrencyHelper.ToMoney(t.Amount, t.CurrencyCode, decimals),
+            t.Date, t.Note, t.Payee, t.AccountId, t.CategoryId,
+            t.IsRecurring, t.CreatedAt,
+        }).ToList();
 
         return Ok(new { total, page, pageSize, items });
     }
@@ -86,16 +98,26 @@ public class TransactionsController(INestDbContext db) : ControllerBase
     {
         if (!await HasAccessAsync(workspaceId)) return Forbid();
 
-        var t = await db.Transactions
+        var raw = await db.Transactions
             .Where(t => t.Account.WorkspaceId == workspaceId && t.Id == id)
             .Select(t => new
             {
-                t.Id, t.Type, t.Amount, t.Date, t.Note, t.Payee,
+                t.Id, t.Type, t.Amount,
+                CurrencyCode = t.Account.Currency,
+                t.Date, t.Note, t.Payee,
                 t.AccountId, t.CategoryId, t.IsRecurring, t.CreatedAt, t.UpdatedAt
             })
             .FirstOrDefaultAsync();
 
-        return t is null ? NotFound() : Ok(t);
+        if (raw is null) return NotFound();
+        var decimals = await CurrencyHelper.LoadDecimalsAsync(db, workspaceId);
+        return Ok(new
+        {
+            raw.Id, raw.Type,
+            Amount = CurrencyHelper.ToMoney(raw.Amount, raw.CurrencyCode, decimals),
+            raw.Date, raw.Note, raw.Payee,
+            raw.AccountId, raw.CategoryId, raw.IsRecurring, raw.CreatedAt, raw.UpdatedAt,
+        });
     }
 
     [HttpPost]

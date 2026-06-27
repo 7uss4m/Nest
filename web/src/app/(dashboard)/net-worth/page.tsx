@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { getWorkspaceId } from "@/lib/auth";
-import { formatCurrency } from "@/lib/utils";
+import { formatMoney, MoneyDto } from "@/lib/utils";
 import { Topbar } from "@/components/layout/Topbar";
 import { Icon } from "@/components/ui/Icon";
 
@@ -11,16 +11,14 @@ interface Asset {
   id: string;
   name: string;
   assetType: number;
-  currentValue: number;
-  currency: string;
+  currentValue: MoneyDto;
 }
 
 interface Liability {
   id: string;
   name: string;
   type: number;
-  currentBalance: number;
-  currency: string;
+  currentBalance: MoneyDto;
 }
 
 interface NWEntry {
@@ -113,22 +111,23 @@ export default function NetWorthPage() {
       .finally(() => setLoading(false));
   }, [workspaceId, base]);
 
-  const totalAssets = assets.reduce((s, a) => s + a.currentValue, 0);
-  const totalLiabilities = liabilities.reduce((s, l) => s + l.currentBalance, 0);
+  const totalAssets = assets.reduce((s, a) => s + a.currentValue.amount, 0);
+  const totalLiabilities = liabilities.reduce((s, l) => s + l.currentBalance.amount, 0);
   const netWorth = totalAssets - totalLiabilities;
   const isPositive = netWorth >= 0;
+  const refMoney = assets[0]?.currentValue ?? liabilities[0]?.currentBalance ?? { amount: 0, currencyCode: "USD", decimalPlaces: 2 };
 
   const prevNW = history.length >= 2 ? history[history.length - 2].netWorth : null;
   const momChange = prevNW != null && prevNW !== 0 ? ((netWorth - prevNW) / Math.abs(prevNW)) * 100 : null;
 
   const assetsByType = ASSET_TYPE_LABELS.map((label, i) => ({
     label, color: ASSET_TYPE_COLORS[i],
-    value: assets.filter((a) => a.assetType === i).reduce((s, a) => s + a.currentValue, 0),
+    value: assets.filter((a) => a.assetType === i).reduce((s, a) => s + a.currentValue.amount, 0),
   })).filter((t) => t.value > 0);
 
   const liabsByType = LIABILITY_TYPE_LABELS.map((label, i) => ({
     label, color: LIABILITY_TYPE_COLORS[i],
-    value: liabilities.filter((l) => l.type === i).reduce((s, l) => s + l.currentBalance, 0),
+    value: liabilities.filter((l) => l.type === i).reduce((s, l) => s + l.currentBalance.amount, 0),
   })).filter((t) => t.value > 0);
 
   return (
@@ -168,12 +167,12 @@ export default function NetWorthPage() {
                 className="text-[40px] font-[800] tabular mb-1"
                 style={{ fontFamily: "'Inter Tight'", color: isPositive ? "#34D399" : "#FB7185" }}
               >
-                {formatCurrency(netWorth)}
+                {formatMoney({ ...refMoney, amount: netWorth })}
               </div>
               <div className="flex items-center gap-4 text-[12px] mb-4">
-                <span style={{ color: "#34D399" }}>Assets: {formatCurrency(totalAssets)}</span>
+                <span style={{ color: "#34D399" }}>Assets: {formatMoney({ ...refMoney, amount: totalAssets })}</span>
                 <span style={{ color: "#5B6573" }}>−</span>
-                <span style={{ color: "#FB7185" }}>Debt: {formatCurrency(totalLiabilities)}</span>
+                <span style={{ color: "#FB7185" }}>Debt: {formatMoney({ ...refMoney, amount: totalLiabilities })}</span>
               </div>
               <SparkChart data={history} />
               <div className="flex items-center justify-between mt-2">
@@ -193,7 +192,7 @@ export default function NetWorthPage() {
                   <div>
                     <div className="text-[12px] text-[#98A2B3]">Total Assets</div>
                     <div className="text-[22px] font-[700] tabular" style={{ fontFamily: "'Inter Tight'", color: "#34D399" }}>
-                      {formatCurrency(totalAssets)}
+                      {formatMoney({ ...refMoney, amount: totalAssets })}
                     </div>
                   </div>
                   <div className="w-9 h-9 rounded-[11px] flex items-center justify-center" style={{ background: "rgba(52,211,153,0.12)" }}>
@@ -208,7 +207,7 @@ export default function NetWorthPage() {
                         <div key={t.label} className="flex items-center gap-2">
                           <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: t.color }} />
                           <span className="text-[12px] text-[#98A2B3] flex-1">{t.label}</span>
-                          <span className="text-[12px] font-semibold tabular" style={{ color: t.color }}>{formatCurrency(t.value)}</span>
+                          <span className="text-[12px] font-semibold tabular" style={{ color: t.color }}>{formatMoney({ ...refMoney, amount: t.value })}</span>
                         </div>
                       ))}
                     </div>
@@ -224,7 +223,7 @@ export default function NetWorthPage() {
                   <div>
                     <div className="text-[12px] text-[#98A2B3]">Total Debt</div>
                     <div className="text-[22px] font-[700] tabular" style={{ fontFamily: "'Inter Tight'", color: "#FB7185" }}>
-                      {formatCurrency(totalLiabilities)}
+                      {formatMoney({ ...refMoney, amount: totalLiabilities })}
                     </div>
                   </div>
                   <div className="w-9 h-9 rounded-[11px] flex items-center justify-center" style={{ background: "rgba(251,113,133,0.12)" }}>
@@ -239,7 +238,7 @@ export default function NetWorthPage() {
                         <div key={t.label} className="flex items-center gap-2">
                           <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: t.color }} />
                           <span className="text-[12px] text-[#98A2B3] flex-1">{t.label}</span>
-                          <span className="text-[12px] font-semibold tabular" style={{ color: t.color }}>{formatCurrency(t.value)}</span>
+                          <span className="text-[12px] font-semibold tabular" style={{ color: t.color }}>{formatMoney({ ...refMoney, amount: t.value })}</span>
                         </div>
                       ))}
                     </div>

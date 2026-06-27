@@ -72,8 +72,13 @@ class _NetWorthBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final totalAssets = data.assets.fold(0.0, (s, a) => s + a.currentValue);
-    final totalLiabilities = data.liabilities.fold(0.0, (s, l) => s + l.currentBalance);
+    final totalAssets = data.assets.fold(0.0, (s, a) => s + a.currentValue.amount);
+    final totalLiabilities = data.liabilities.fold(0.0, (s, l) => s + l.currentBalance.amount);
+    final refMoney = data.assets.isNotEmpty
+        ? data.assets.first.currentValue
+        : data.liabilities.isNotEmpty
+        ? data.liabilities.first.currentBalance
+        : const MoneyDto(amount: 0, currencyCode: 'USD', decimalPlaces: 2);
     final netWorth = totalAssets - totalLiabilities;
 
     // MoM change from history
@@ -106,7 +111,7 @@ class _NetWorthBody extends StatelessWidget {
             const SizedBox(height: 6),
             Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
               Text(
-                formatCurrency(netWorth),
+                formatCurrency(netWorth, refMoney.currencyCode, refMoney.decimalPlaces),
                 style: const TextStyle(fontFamily: 'InterTight', fontWeight: FontWeight.w800, fontSize: 32, color: Colors.white),
               ),
               if (momChange != null) ...[
@@ -139,14 +144,14 @@ class _NetWorthBody extends StatelessWidget {
         Row(children: [
           Expanded(child: _SplitCard(
             label: 'Assets',
-            value: totalAssets,
+            valueStr: formatCurrency(totalAssets, refMoney.currencyCode, refMoney.decimalPlaces),
             color: NestColors.income,
             icon: Icons.diamond_outlined,
           )),
           const SizedBox(width: 10),
           Expanded(child: _SplitCard(
             label: 'Liabilities',
-            value: totalLiabilities,
+            valueStr: formatCurrency(totalLiabilities, refMoney.currencyCode, refMoney.decimalPlaces),
             color: NestColors.expense,
             icon: Icons.trending_down,
           )),
@@ -355,10 +360,10 @@ class _BarTrendPainter extends CustomPainter {
 
 class _SplitCard extends StatelessWidget {
   final String label;
-  final double value;
+  final String valueStr;
   final Color color;
   final IconData icon;
-  const _SplitCard({required this.label, required this.value, required this.color, required this.icon});
+  const _SplitCard({required this.label, required this.valueStr, required this.color, required this.icon});
 
   @override
   Widget build(BuildContext context) {
@@ -377,7 +382,7 @@ class _SplitCard extends StatelessWidget {
         ]),
         const SizedBox(height: 8),
         Text(
-          formatCurrency(value),
+          valueStr,
           style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: color, fontFamily: 'InterTight'),
         ),
       ]),

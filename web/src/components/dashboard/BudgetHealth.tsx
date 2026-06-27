@@ -1,5 +1,5 @@
 import { Icon } from "@/components/ui/Icon";
-import { formatCurrency } from "@/lib/utils";
+import { formatMoney, MoneyDto } from "@/lib/utils";
 
 export interface BudgetItemData {
   id: string;
@@ -7,7 +7,7 @@ export interface BudgetItemData {
   icon: string;
   color: string;
   spent: number;
-  limit: number;
+  limit: MoneyDto;
 }
 
 export function BudgetHealth({ budgets }: { budgets: BudgetItemData[] }) {
@@ -26,7 +26,7 @@ export function BudgetHealth({ budgets }: { budgets: BudgetItemData[] }) {
       ) : (
         <div className="flex flex-col gap-[18px]">
           {budgets.map((b) => {
-            const over = b.spent > b.limit;
+            const over = b.spent > b.limit.amount;
             return (
               <div key={b.id}>
                 <div className="flex items-center gap-[11px] mb-[9px]">
@@ -47,16 +47,16 @@ export function BudgetHealth({ budgets }: { budgets: BudgetItemData[] }) {
                       </span>
                     )}
                     <span style={{ color: over ? "#FB7185" : "#EEF1F6", fontWeight: 600 }}>
-                      {formatCurrency(b.spent)}
+                      {formatMoney({ ...b.limit, amount: b.spent })}
                     </span>
-                    {" / "}{formatCurrency(b.limit)}
+                    {" / "}{formatMoney(b.limit)}
                   </div>
                 </div>
                 <div className="h-[7px] rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.06)" }}>
                   <div
                     className="h-full rounded-full"
                     style={{
-                      width: `${Math.min((b.spent / b.limit) * 100, 100)}%`,
+                      width: `${Math.min((b.spent / b.limit.amount) * 100, 100)}%`,
                       background: over ? "#FB7185" : b.color,
                     }}
                   />

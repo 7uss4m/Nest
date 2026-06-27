@@ -77,6 +77,7 @@ export default function Page() {
       <div className="flex-1 overflow-y-auto p-6 max-w-2xl">
         <WorkspaceSection ws={ws} isOwner={isOwner} onRename={(name) => setWs((w) => w ? { ...w, name } : w)} />
         <MembersSection ws={ws} myEmail={myEmail} isOwner={isOwner} onReload={load} />
+        <CurrenciesSection wsId={ws.id} isOwner={isOwner} />
         <ExchangeRatesSection />
         <ApiKeysSection />
         <AccountSection myMember={myMember} />
@@ -329,6 +330,162 @@ function MembersSection({ ws, myEmail, isOwner, onReload }: { ws: Workspace; myE
               </p>
             )}
             {inviteError && <p className="text-[12px] text-[#FB7185] mt-2">{inviteError}</p>}
+          </div>
+        )}
+      </div>
+    </section>
+  );
+}
+
+// ── Currencies section ────────────────────────────────────────────────────────
+
+interface CurrencyDto {
+  code: string;
+  symbol: string;
+  decimalPlaces: number;
+  isDefault: boolean;
+}
+
+function CurrenciesSection({ wsId, isOwner }: { wsId: string; isOwner: boolean }) {
+  const [currencies, setCurrencies] = useState<CurrencyDto[]>([]);
+  const [editingCode, setEditingCode] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({ symbol: "", decimalPlaces: 2, isDefault: false });
+  const [addForm, setAddForm] = useState({ code: "", symbol: "", decimalPlaces: 2, isDefault: false });
+  const [adding, setAdding] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    api.get<CurrencyDto[]>(`/api/workspaces/${wsId}/currencies`).then(setCurrencies).catch(() => {});
+  }, [wsId]);
+
+  function startEdit(c: CurrencyDto) {
+    setEditingCode(c.code);
+    setEditForm({ symbol: c.symbol, decimalPlaces: c.decimalPlaces, isDefault: c.isDefault });
+  }
+
+  async function saveEdit() {
+    if (!editingCode) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await api.put(`/api/workspaces/${wsId}/currencies/${editingCode}`, editForm);
+      setCurrencies((prev) => prev.map((c) => {
+        if (c.code === editingCode) return { ...c, ...editForm };
+        if (editForm.isDefault) return { ...c, isDefault: false };
+        return c;
+      }));
+      setEditingCode(null);
+    } catch (e: unknown) { setError(String(e)); } finally { setSaving(false); }
+  }
+
+  async function handleAdd(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
+    try {
+      const created = await api.post<CurrencyDto>(`/api/workspaces/${wsId}/currencies`, addForm);
+      setCurrencies((prev) => {
+        const next = addForm.isDefault ? prev.map((c) => ({ ...c, isDefault: false })) : prev;
+        return [...next, created];
+      });
+      setAdding(false);
+      setAddForm({ code: "", symbol: "", decimalPlaces: 2, isDefault: false });
+    } catch (e: unknown) { setError(String(e)); } finally { setSaving(false); }
+  }
+
+  async function handleDelete(code: string) {
+    try {
+      await api.delete(`/api/workspaces/${wsId}/currencies/${code}`);
+      setCurrencies((prev) => prev.filter((c) => c.code !== code));
+    } catch (e: unknown) { setError(String(e)); }
+  }
+
+  const inputCls = "bg-[rgba(255,255,255,0.05)] text-[#EEF1F6] text-[13px] rounded-[10px] px-3 py-2 outline-none border border-[rgba(255,255,255,0.08)] focus:border-[rgba(99,102,241,0.5)] placeholder:text-[#5B6573]";
+
+  return (
+    <section className="mb-6">
+      <h2 className="text-[11px] font-semibold uppercase tracking-wider text-[#5B6573] mb-3">Currencies</h2>
+      <div className="rounded-[18px] overflow-hidden" style={{ background: "#141925", border: "1px solid rgba(255,255,255,0.06)" }}>
+        {error && (
+          <div className="px-5 py-3 text-[12px] text-[#FB7185]" style={{ background: "rgba(251,113,133,0.08)" }}>{error}</div>
+        )}
+        {currencies.map((c, i) => (
+          <div key={c.code} className="px-5 py-3.5 flex items-center gap-3"
+            style={{ borderBottom: i < currencies.length - 1 || isOwner ? "1px solid rgba(255,255,255,0.04)" : undefined }}>
+            {editingCode === c.code ? (
+              <div className="flex-1 flex items-center gap-2 flex-wrap">
+                <span className="text-[13px] font-bold text-[#EEF1F6] w-[45px]">{c.code}</span>
+                <input className={inputCls + " w-[70px]"} placeholder="Symbol" value={editForm.symbol}
+                  onChange={(e) => setEditForm((f) => ({ ...f, symbol: e.target.value }))} maxLength={6} />
+                <input type="number" min="0" max="8" className={inputCls + " w-[70px]"} placeholder="Decimals"
+                  value={editForm.decimalPlaces} onChange={(e) => setEditForm((f) => ({ ...f, decimalPlaces: parseInt(e.target.value) || 0 }))} />
+                <label className="flex items-center gap-1.5 text-[12px] text-[#98A2B3] cursor-pointer">
+                  <input type="checkbox" checked={editForm.isDefault} onChange={(e) => setEditForm((f) => ({ ...f, isDefault: e.target.checked }))} />
+                  Default
+                </label>
+                <button onClick={saveEdit} disabled={saving} className="px-3 py-1.5 rounded-[9px] bg-[#6366F1] text-white text-[12px] font-semibold disabled:opacity-50">
+                  {saving ? "…" : "Save"}
+                </button>
+                <button onClick={() => setEditingCode(null)} className="text-[#5B6573] text-[12px] hover:text-[#98A2B3]">Cancel</button>
+              </div>
+            ) : (
+              <>
+                <div className="flex-1 flex items-center gap-3">
+                  <span className="text-[13.5px] font-bold text-[#EEF1F6] w-[45px]">{c.code}</span>
+                  <span className="text-[13px] text-[#98A2B3]">{c.symbol}</span>
+                  <span className="text-[12px] text-[#5B6573]">{c.decimalPlaces} decimal{c.decimalPlaces !== 1 ? "s" : ""}</span>
+                  {c.isDefault && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full" style={{ background: "rgba(99,102,241,0.18)", color: "#818CF8" }}>DEFAULT</span>
+                  )}
+                </div>
+                {isOwner && (
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button onClick={() => startEdit(c)} className="text-[#5B6573] hover:text-[#98A2B3] transition-colors" title="Edit">
+                      <Icon name="edit" size={16} />
+                    </button>
+                    {!c.isDefault && currencies.length > 1 && (
+                      <button onClick={() => handleDelete(c.code)} className="text-[#5B6573] hover:text-[#FB7185] transition-colors" title="Remove">
+                        <Icon name="delete" size={16} />
+                      </button>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+          </div>
+        ))}
+
+        {isOwner && (
+          <div className="px-5 py-4">
+            {adding ? (
+              <form onSubmit={handleAdd} className="flex flex-col gap-3">
+                <p className="text-[11px] font-semibold text-[#5B6573] uppercase tracking-wider">Add currency</p>
+                <div className="flex gap-2 flex-wrap items-center">
+                  <input className={inputCls + " w-[80px] uppercase"} placeholder="Code (USD)" maxLength={10}
+                    value={addForm.code} onChange={(e) => setAddForm((f) => ({ ...f, code: e.target.value.toUpperCase() }))} required />
+                  <input className={inputCls + " w-[80px]"} placeholder="Symbol ($)"
+                    value={addForm.symbol} onChange={(e) => setAddForm((f) => ({ ...f, symbol: e.target.value }))} maxLength={6} required />
+                  <input type="number" min="0" max="8" className={inputCls + " w-[90px]"} placeholder="Decimals"
+                    value={addForm.decimalPlaces} onChange={(e) => setAddForm((f) => ({ ...f, decimalPlaces: parseInt(e.target.value) || 0 }))} />
+                  <label className="flex items-center gap-1.5 text-[12px] text-[#98A2B3] cursor-pointer">
+                    <input type="checkbox" checked={addForm.isDefault} onChange={(e) => setAddForm((f) => ({ ...f, isDefault: e.target.checked }))} />
+                    Default
+                  </label>
+                  <button type="submit" disabled={saving} className="px-4 py-2 rounded-[10px] bg-[#6366F1] text-white text-[13px] font-semibold disabled:opacity-50">
+                    {saving ? "Adding…" : "Add"}
+                  </button>
+                  <button type="button" onClick={() => setAdding(false)} className="text-[#5B6573] text-[13px]">Cancel</button>
+                </div>
+              </form>
+            ) : (
+              <button
+                onClick={() => setAdding(true)}
+                className="flex items-center gap-1.5 text-[13px] font-medium text-[#818CF8] hover:text-[#A5B4FC] transition-colors">
+                <Icon name="add" size={16} />
+                Add currency
+              </button>
+            )}
           </div>
         )}
       </div>

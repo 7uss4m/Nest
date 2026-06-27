@@ -116,9 +116,9 @@ class _Body extends StatelessWidget {
     final catMap = {for (final c in data.categories) c.id: c};
     final spendMap = {for (final s in data.spending) s.categoryId: s.total};
 
-    final totalBalance = data.summary.accounts.fold(0.0, (s, a) => s + a.balance);
-    final savingsRate = data.summary.income > 0
-        ? (data.summary.saved / data.summary.income * 100).round()
+    final totalBalance = data.summary.accounts.fold(0.0, (s, a) => s + a.balance.amount);
+    final savingsRate = data.summary.income.amount > 0
+        ? (data.summary.saved.amount / data.summary.income.amount * 100).round()
         : 0;
 
     return Column(
@@ -131,13 +131,13 @@ class _Body extends StatelessWidget {
         Row(children: [
           Expanded(child: _SummaryCard(
             icon: Icons.south_west, iconColor: NestColors.income, label: 'Income',
-            amount: formatCurrency(data.summary.income),
+            amount: formatMoney(data.summary.income),
             sub: '$savingsRate% saved',
           )),
           const SizedBox(width: 12),
           Expanded(child: _SummaryCard(
             icon: Icons.north_east, iconColor: NestColors.expense, label: 'Expenses',
-            amount: formatCurrency(data.summary.expense),
+            amount: formatMoney(data.summary.expense),
           )),
         ]),
         const SizedBox(height: 18),
@@ -257,14 +257,14 @@ class _AppBarRow extends ConsumerWidget {
 
 class _NetWorthCard extends StatelessWidget {
   final double netWorth;
-  final double income;
-  final double expense;
+  final MoneyDto income;
+  final MoneyDto expense;
   const _NetWorthCard({required this.netWorth, required this.income, required this.expense});
 
   @override
   Widget build(BuildContext context) {
-    final saved = income - expense;
-    final momPct = income > 0 ? (saved / income * 100) : 0.0;
+    final saved = income.amount - expense.amount;
+    final momPct = income.amount > 0 ? (saved / income.amount * 100) : 0.0;
     final isPositive = saved >= 0;
 
     return Container(
@@ -286,7 +286,7 @@ class _NetWorthCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            formatCurrency(netWorth),
+            formatCurrency(netWorth, income.currencyCode, income.decimalPlaces),
             style: const TextStyle(fontFamily: 'InterTight', fontSize: 34, fontWeight: FontWeight.w800, color: Color(0xFF0B0E14), letterSpacing: -1),
           ),
           const SizedBox(height: 8),
@@ -306,7 +306,7 @@ class _NetWorthCard extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              '${isPositive ? "+" : ""}${formatCurrency(saved)} saved this month',
+              '${isPositive ? "+" : ""}${formatCurrency(saved, income.currencyCode, income.decimalPlaces)} saved this month',
               style: TextStyle(fontSize: 12, color: const Color(0xFF0B0E14).withOpacity(0.65), fontWeight: FontWeight.w500),
             ),
           ]),
@@ -386,8 +386,8 @@ class _BudgetSection extends StatelessWidget {
             final b = items[i];
             final cat = catMap[b.categoryId]!;
             final spent = spendMap[b.categoryId] ?? 0.0;
-            final pct = b.amountLimit > 0 ? (spent / b.amountLimit).clamp(0.0, 1.0) : 0.0;
-            final isOver = spent > b.amountLimit;
+            final pct = b.amountLimit.amount > 0 ? (spent / b.amountLimit.amount).clamp(0.0, 1.0) : 0.0;
+            final isOver = spent > b.amountLimit.amount;
             final color = _parseHex(cat.color);
 
             return Column(children: [
@@ -468,7 +468,7 @@ class _UpcomingSection extends StatelessWidget {
               Text(p.name, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: NestColors.text1)),
               Text(info.text, style: TextStyle(fontSize: 11, color: info.color)),
             ])),
-            Text(formatCurrency(p.amount, p.currency),
+            Text(formatMoney(p.amount),
               style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: NestColors.text1)),
           ]),
         );
@@ -521,8 +521,8 @@ class _AccountsSection extends StatelessWidget {
               Text(a.name, style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: NestColors.text1)),
               Text(a.currency, style: const TextStyle(fontSize: 11, color: NestColors.text4)),
             ])),
-            Text(formatCurrency(a.balance, a.currency),
-              style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: a.balance >= 0 ? NestColors.text1 : NestColors.expense)),
+            Text(formatMoney(a.balance),
+              style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: a.balance.amount >= 0 ? NestColors.text1 : NestColors.expense)),
           ]),
         );
       }),

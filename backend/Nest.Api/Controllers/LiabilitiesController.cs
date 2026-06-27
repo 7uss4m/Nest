@@ -2,7 +2,9 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
+using Nest.Api.Helpers;
 using Nest.Application.Common;
+using Nest.Application.Currencies;
 using Nest.Domain.Entities;
 using Nest.Domain.Enums;
 
@@ -23,20 +25,18 @@ public class LiabilitiesController(INestDbContext db) : ControllerBase
     {
         if (!await HasAccessAsync(workspaceId)) return Forbid();
 
-        var liabilities = await db.Liabilities
-            .Where(l => l.WorkspaceId == workspaceId)
-            .Select(l => new
-            {
-                l.Id, l.Name, l.Type, l.LenderName,
-                l.OriginalAmount, l.CurrentBalance, l.Currency,
-                l.InterestRate, l.MonthlyPayment,
-                l.StartDate, l.DueDate,
-                l.LinkedAssetId,
-                l.IsShared, l.Notes, l.CreatedAt,
-            })
-            .ToListAsync();
+        var liabilities = await db.Liabilities.Where(l => l.WorkspaceId == workspaceId).ToListAsync();
+        var decimals = await CurrencyHelper.LoadDecimalsAsync(db, workspaceId);
 
-        return Ok(liabilities);
+        return Ok(liabilities.Select(l => new
+        {
+            l.Id, l.Name, l.Type, l.LenderName,
+            OriginalAmount = CurrencyHelper.ToMoney(l.OriginalAmount, l.Currency, decimals),
+            CurrentBalance = CurrencyHelper.ToMoney(l.CurrentBalance, l.Currency, decimals),
+            MonthlyPayment = CurrencyHelper.ToMoney(l.MonthlyPayment, l.Currency, decimals),
+            l.InterestRate, l.StartDate, l.DueDate,
+            l.LinkedAssetId, l.IsShared, l.Notes, l.CreatedAt,
+        }));
     }
 
     [HttpGet("{id:guid}")]
@@ -45,24 +45,30 @@ public class LiabilitiesController(INestDbContext db) : ControllerBase
         if (!await HasAccessAsync(workspaceId)) return Forbid();
 
         var liability = await db.Liabilities
+            .Include(l => l.BalanceHistory)
             .Where(l => l.WorkspaceId == workspaceId && l.Id == id)
-            .Select(l => new
-            {
-                l.Id, l.Name, l.Type, l.LenderName,
-                l.OriginalAmount, l.CurrentBalance, l.Currency,
-                l.InterestRate, l.MonthlyPayment,
-                l.StartDate, l.DueDate,
-                l.LinkedAssetId,
-                l.IsShared, l.Notes, l.CreatedAt,
-                BalanceHistory = l.BalanceHistory
-                    .OrderBy(h => h.CreatedAt)
-                    .Select(h => new { h.Balance, h.CreatedAt })
-                    .ToList(),
-            })
             .FirstOrDefaultAsync();
 
         if (liability is null) return NotFound();
-        return Ok(liability);
+
+        var decimals = await CurrencyHelper.LoadDecimalsAsync(db, workspaceId);
+        return Ok(new
+        {
+            liability.Id, liability.Name, liability.Type, liability.LenderName,
+            OriginalAmount = CurrencyHelper.ToMoney(liability.OriginalAmount, liability.Currency, decimals),
+            CurrentBalance = CurrencyHelper.ToMoney(liability.CurrentBalance, liability.Currency, decimals),
+            MonthlyPayment = CurrencyHelper.ToMoney(liability.MonthlyPayment, liability.Currency, decimals),
+            liability.InterestRate, liability.StartDate, liability.DueDate,
+            liability.LinkedAssetId, liability.IsShared, liability.Notes, liability.CreatedAt,
+            BalanceHistory = liability.BalanceHistory
+                .OrderBy(h => h.CreatedAt)
+                .Select(h => new
+                {
+                    Balance = CurrencyHelper.ToMoney(h.Balance, liability.Currency, decimals),
+                    h.CreatedAt,
+                })
+                .ToList(),
+        });
     }
 
     [HttpPost]

@@ -106,9 +106,10 @@ class _AssetList extends ConsumerWidget {
       );
     }
 
-    final totalValue = assets.fold(0.0, (s, a) => s + a.currentValue);
-    final physicalTotal = assets.where((a) => a.assetClass == 0).fold(0.0, (s, a) => s + a.currentValue);
-    final financialTotal = assets.where((a) => a.assetClass == 1).fold(0.0, (s, a) => s + a.currentValue);
+    final totalValue = assets.fold(0.0, (s, a) => s + a.currentValue.amount);
+    final physicalTotal = assets.where((a) => a.assetClass == 0).fold(0.0, (s, a) => s + a.currentValue.amount);
+    final financialTotal = assets.where((a) => a.assetClass == 1).fold(0.0, (s, a) => s + a.currentValue.amount);
+    final refMoney = assets.first.currentValue;
 
     return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -131,14 +132,14 @@ class _AssetList extends ConsumerWidget {
                 const Text('Total Assets', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white70)),
                 const SizedBox(height: 6),
                 Text(
-                  formatCurrency(totalValue),
+                  formatCurrency(totalValue, refMoney.currencyCode, refMoney.decimalPlaces),
                   style: const TextStyle(fontFamily: 'InterTight', fontWeight: FontWeight.w800, fontSize: 30, color: Colors.white),
                 ),
                 const SizedBox(height: 14),
                 Row(children: [
-                  _HeroStat(label: 'Physical', value: formatCurrency(physicalTotal), color: NestColors.indigoL),
+                  _HeroStat(label: 'Physical', value: formatCurrency(physicalTotal, refMoney.currencyCode, refMoney.decimalPlaces), color: NestColors.indigoL),
                   const SizedBox(width: 24),
-                  _HeroStat(label: 'Financial', value: formatCurrency(financialTotal), color: NestColors.teal),
+                  _HeroStat(label: 'Financial', value: formatCurrency(financialTotal, refMoney.currencyCode, refMoney.decimalPlaces), color: NestColors.teal),
                 ]),
               ]),
             ),
@@ -168,9 +169,9 @@ class _AssetTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final typeIdx = asset.assetType.clamp(0, _assetTypeLabels.length - 1);
     final color = _assetTypeColors[typeIdx];
-    final hasGain = asset.purchasePrice != null && asset.purchasePrice! > 0;
-    final gainLoss = hasGain ? asset.currentValue - asset.purchasePrice! : null;
-    final gainPct = hasGain ? (gainLoss! / asset.purchasePrice!) * 100 : null;
+    final hasGain = asset.purchasePrice != null && asset.purchasePrice!.amount > 0;
+    final gainLoss = hasGain ? asset.currentValue.amount - asset.purchasePrice!.amount : null;
+    final gainPct = hasGain ? (gainLoss! / asset.purchasePrice!.amount) * 100 : null;
     final isGain = gainLoss != null && gainLoss >= 0;
 
     return Padding(
@@ -200,7 +201,7 @@ class _AssetTile extends StatelessWidget {
           const SizedBox(width: 12),
           Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
             Text(
-              formatCurrency(asset.currentValue),
+              formatMoney(asset.currentValue),
               style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: NestColors.text1, fontFamily: 'InterTight'),
             ),
             if (gainLoss != null)

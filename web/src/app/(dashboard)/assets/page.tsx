@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { api } from "@/lib/api";
 import { getWorkspaceId } from "@/lib/auth";
-import { formatCurrency } from "@/lib/utils";
+import { formatMoney, MoneyDto } from "@/lib/utils";
 import { Topbar } from "@/components/layout/Topbar";
 import { Drawer } from "@/components/ui/Drawer";
 import { Icon } from "@/components/ui/Icon";
@@ -29,11 +29,9 @@ interface Asset {
   description?: string;
   assetClass: number;
   assetType: number;
-  currentValue: number;
-  currency: string;
+  currentValue: MoneyDto;
   purchaseDate?: string;
-  purchasePrice?: number;
-  purchaseCurrency?: string;
+  purchasePrice?: MoneyDto;
   institution?: string;
   condition?: string;
   location?: string;
@@ -53,8 +51,8 @@ function AssetCard({ asset, onDelete, onUpdateValue }: AssetCardProps) {
   const [confirming, setConfirming] = useState(false);
   const color = ASSET_TYPE_COLORS[asset.assetType] ?? "#98A2B3";
   const icon = ASSET_TYPE_ICONS[asset.assetType] ?? "category";
-  const gain = asset.purchasePrice != null ? asset.currentValue - asset.purchasePrice : null;
-  const gainPct = gain != null && asset.purchasePrice ? (gain / asset.purchasePrice) * 100 : null;
+  const gain = asset.purchasePrice != null ? asset.currentValue.amount - asset.purchasePrice.amount : null;
+  const gainPct = gain != null && asset.purchasePrice ? (gain / asset.purchasePrice.amount) * 100 : null;
 
   return (
     <div
@@ -106,14 +104,14 @@ function AssetCard({ asset, onDelete, onUpdateValue }: AssetCardProps) {
 
       <div>
         <div className="text-[22px] font-[700] tabular leading-tight" style={{ fontFamily: "'Inter Tight'", color }}>
-          {formatCurrency(asset.currentValue, asset.currency)}
+          {formatMoney(asset.currentValue)}
         </div>
         {gain != null && (
           <div
             className="text-[11.5px] font-medium mt-0.5"
             style={{ color: gain >= 0 ? "#34D399" : "#FB7185" }}
           >
-            {gain >= 0 ? "+" : ""}{formatCurrency(gain, asset.currency)}
+            {gain >= 0 ? "+" : ""}{formatMoney({ ...asset.currentValue, amount: gain })}
             {gainPct != null && ` (${gainPct >= 0 ? "+" : ""}${gainPct.toFixed(1)}%)`}
             {" from purchase"}
           </div>
@@ -245,10 +243,11 @@ export default function AssetsPage() {
   }
 
   const isPhysical = parseInt(form.assetClass) === 0;
-  const totalValue = assets.reduce((s, a) => s + a.currentValue, 0);
+  const totalValue = assets.reduce((s, a) => s + a.currentValue.amount, 0);
+  const defaultMoney = assets[0]?.currentValue ?? { amount: 0, currencyCode: "USD", decimalPlaces: 2 };
   const byType = ASSET_TYPE_LABELS.map((label, i) => ({
     label, count: assets.filter((a) => a.assetType === i).length,
-    value: assets.filter((a) => a.assetType === i).reduce((s, a) => s + a.currentValue, 0),
+    value: assets.filter((a) => a.assetType === i).reduce((s, a) => s + a.currentValue.amount, 0),
     color: ASSET_TYPE_COLORS[i],
   })).filter((t) => t.count > 0);
 
@@ -274,7 +273,7 @@ export default function AssetsPage() {
             <div className="flex-1">
               <div className="text-[12px] text-[#98A2B3] mb-1">Total Assets</div>
               <div className="text-[32px] font-[800] tabular" style={{ fontFamily: "'Inter Tight'", color: "#34D399" }}>
-                {formatCurrency(totalValue)}
+                {formatMoney({ ...defaultMoney, amount: totalValue })}
               </div>
               <div className="text-[12px] text-[#5B6573] mt-1">{assets.length} asset{assets.length !== 1 ? "s" : ""}</div>
             </div>
@@ -284,7 +283,7 @@ export default function AssetsPage() {
                   <div key={t.label} className="flex items-center gap-2">
                     <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: t.color }} />
                     <span className="text-[11.5px] text-[#98A2B3]">{t.label}</span>
-                    <span className="text-[11.5px] font-semibold tabular ml-auto" style={{ color: t.color }}>{formatCurrency(t.value)}</span>
+                    <span className="text-[11.5px] font-semibold tabular ml-auto" style={{ color: t.color }}>{formatMoney({ ...defaultMoney, amount: t.value })}</span>
                   </div>
                 ))}
               </div>
@@ -523,7 +522,7 @@ export default function AssetsPage() {
         <form id="value-form" onSubmit={handleUpdateValue} className="flex flex-col gap-5">
           {valueDrawerAsset && (
             <div className="text-[12.5px] text-[#5B6573]">
-              Current: <span className="text-[#EEF1F6] font-semibold tabular">{formatCurrency(valueDrawerAsset.currentValue, valueDrawerAsset.currency)}</span>
+              Current: <span className="text-[#EEF1F6] font-semibold tabular">{formatMoney(valueDrawerAsset.currentValue)}</span>
             </div>
           )}
           <div className="flex flex-col gap-[6px]">

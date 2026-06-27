@@ -2,8 +2,10 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Nest.Api.Helpers;
 using Nest.Application.Accounts;
 using Nest.Application.Common;
+using Nest.Application.Currencies;
 using Nest.Domain.Entities;
 using Nest.Domain.Enums;
 
@@ -27,7 +29,8 @@ public class AccountsController(INestDbContext db) : ControllerBase
             .ToListAsync();
 
         var balances = await GetBalances(accounts.Select(a => a.Id).ToList());
-        return Ok(accounts.Select(a => ToDto(a, balances.GetValueOrDefault(a.Id))).ToList());
+        var decimals = await CurrencyHelper.LoadDecimalsAsync(db, workspaceId);
+        return Ok(accounts.Select(a => ToDto(a, balances.GetValueOrDefault(a.Id), decimals)).ToList());
     }
 
     [HttpPost]
@@ -48,7 +51,8 @@ public class AccountsController(INestDbContext db) : ControllerBase
         };
         db.Accounts.Add(account);
         await db.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetAll), new { workspaceId }, ToDto(account, 0));
+        var decimals = await CurrencyHelper.LoadDecimalsAsync(db, workspaceId);
+        return CreatedAtAction(nameof(GetAll), new { workspaceId }, ToDto(account, 0, decimals));
     }
 
     [HttpPut("{id:guid}")]
@@ -66,7 +70,8 @@ public class AccountsController(INestDbContext db) : ControllerBase
 
         await db.SaveChangesAsync();
         var balances = await GetBalances([id]);
-        return Ok(ToDto(account, balances.GetValueOrDefault(id)));
+        var decimals = await CurrencyHelper.LoadDecimalsAsync(db, workspaceId);
+        return Ok(ToDto(account, balances.GetValueOrDefault(id), decimals));
     }
 
     [HttpDelete("{id:guid}")]
@@ -137,7 +142,9 @@ public class AccountsController(INestDbContext db) : ControllerBase
         return minRole is null || m.Role <= minRole;
     }
 
-    private static AccountDto ToDto(Account a, decimal balance) => new(
+    private static AccountDto ToDto(Account a, decimal balance, Dictionary<string, int> decimals) => new(
         a.Id, a.WorkspaceId, a.Name, a.Type, a.Currency,
-        a.Color, a.Icon, a.IsShared, balance, a.CreatedAt);
+        a.Color, a.Icon, a.IsShared,
+        CurrencyHelper.ToMoney(balance, a.Currency, decimals),
+        a.CreatedAt);
 }

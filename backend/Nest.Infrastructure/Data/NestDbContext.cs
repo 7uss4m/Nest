@@ -11,6 +11,7 @@ public class NestDbContext(DbContextOptions<NestDbContext> options)
 {
     public DbSet<Workspace> Workspaces => Set<Workspace>();
     public DbSet<WorkspaceMember> WorkspaceMembers => Set<WorkspaceMember>();
+    public DbSet<WorkspaceCurrency> WorkspaceCurrencies => Set<WorkspaceCurrency>();
     public DbSet<Account> Accounts => Set<Account>();
     public DbSet<Category> Categories => Set<Category>();
     public DbSet<Transaction> Transactions => Set<Transaction>();

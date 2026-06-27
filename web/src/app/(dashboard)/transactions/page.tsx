@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { api } from "@/lib/api";
 import { getWorkspaceId } from "@/lib/auth";
-import { formatCurrency } from "@/lib/utils";
+import { formatMoney, MoneyDto } from "@/lib/utils";
 import { Topbar } from "@/components/layout/Topbar";
 import { Drawer } from "@/components/ui/Drawer";
 import { Icon } from "@/components/ui/Icon";
@@ -17,7 +17,7 @@ const TX_TYPE_BG = ["rgba(52,211,153,0.14)", "rgba(251,113,133,0.14)", "rgba(99,
 interface Transaction {
   id: string;
   type: number;
-  amount: number;
+  amount: MoneyDto;
   date: string;
   note: string | null;
   payee: string | null;
@@ -258,7 +258,7 @@ export default function TransactionsPage() {
       ...res.items.map((t) => [
         t.date,
         t.type === 0 ? "Income" : t.type === 1 ? "Expense" : "Transfer",
-        t.amount.toFixed(2),
+        t.amount.amount.toFixed(t.amount.decimalPlaces),
         accountMap.get(t.accountId)?.name ?? t.accountId,
         t.categoryId ? (categoryMap.get(t.categoryId)?.name ?? t.categoryId) : "",
         t.payee ?? "",
@@ -486,7 +486,7 @@ export default function TransactionsPage() {
                       color: isIncome ? "#34D399" : isExpense ? "#FB7185" : "#818CF8",
                     }}
                   >
-                    {isExpense ? "−" : isIncome ? "+" : ""}{formatCurrency(tx.amount, account?.currency ?? "USD")}
+                    {isExpense ? "−" : isIncome ? "+" : ""}{formatMoney(tx.amount)}
                   </div>
 
                   {/* Delete */}
@@ -731,7 +731,7 @@ export default function TransactionsPage() {
                   </div>
                   {t.amount != null && (
                     <div className="text-[13px] font-semibold tabular" style={{ color: TX_TYPE_COLORS[t.type] }}>
-                      {formatCurrency(t.amount, acc?.currency ?? "USD")}
+                      {acc ? formatMoney({ amount: t.amount, currencyCode: acc.currency, decimalPlaces: 2 }) : t.amount.toFixed(2)}
                     </div>
                   )}
                   <button

@@ -271,7 +271,7 @@ class _PaymentTile extends StatelessWidget {
           const SizedBox(width: 12),
           Column(crossAxisAlignment: CrossAxisAlignment.end, children: [
             Text(
-              formatCurrency(payment.amount),
+              formatMoney(payment.amount),
               style: TextStyle(
                 fontSize: 14.5, fontWeight: FontWeight.w700, fontFamily: 'InterTight',
                 color: payment.isPaid ? NestColors.text3 : NestColors.text1,

@@ -1,5 +1,5 @@
 import { Icon } from "@/components/ui/Icon";
-import { formatCurrency } from "@/lib/utils";
+import { formatMoney, MoneyDto } from "@/lib/utils";
 
 const ACCOUNT_TYPE_LABEL = ["Cash", "Bank", "Credit Card", "Savings", "Investment", "Other"];
 
@@ -10,7 +10,7 @@ export interface AccountData {
   currency: string;
   color: string;
   icon: string;
-  balance: number;
+  balance: MoneyDto;
 }
 
 export function AccountsList({ accounts }: { accounts: AccountData[] }) {
@@ -33,7 +33,7 @@ export function AccountsList({ accounts }: { accounts: AccountData[] }) {
         <div className="flex flex-col gap-[6px]">
           {accounts.map((a) => {
             const typeLabel = ACCOUNT_TYPE_LABEL[a.type] ?? "Account";
-            const isNegative = a.balance < 0;
+            const isNegative = a.balance.amount < 0;
             return (
               <div
                 key={a.id}
@@ -53,7 +53,7 @@ export function AccountsList({ accounts }: { accounts: AccountData[] }) {
                   className="text-[14px] font-semibold tabular"
                   style={{ color: isNegative ? "#FB7185" : undefined }}
                 >
-                  {isNegative ? "−" : ""}{formatCurrency(Math.abs(a.balance), a.currency)}
+                  {isNegative ? "−" : ""}{formatMoney({ ...a.balance, amount: Math.abs(a.balance.amount) })}
                 </span>
               </div>
             );

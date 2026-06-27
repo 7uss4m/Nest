@@ -84,9 +84,10 @@ class _AccountList extends StatelessWidget {
 
     // Debt accounts (Credit Card, Loan) have negative-style balances shown separately
     final isDebt = (AccountDto a) => a.type == 3 || a.type == 6;
-    final totalAssets = accounts.where((a) => !isDebt(a)).fold(0.0, (s, a) => s + a.balance.clamp(0, double.infinity));
-    final totalDebt = accounts.where(isDebt).fold(0.0, (s, a) => s + a.balance.abs());
+    final totalAssets = accounts.where((a) => !isDebt(a)).fold(0.0, (s, a) => s + a.balance.amount.clamp(0, double.infinity));
+    final totalDebt = accounts.where(isDebt).fold(0.0, (s, a) => s + a.balance.amount.abs());
     final net = totalAssets - totalDebt;
+    final refMoney = accounts.first.balance;
 
     return CustomScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
@@ -109,14 +110,14 @@ class _AccountList extends StatelessWidget {
                 const Text('Net Balance', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white70)),
                 const SizedBox(height: 6),
                 Text(
-                  formatCurrency(net),
+                  formatCurrency(net, refMoney.currencyCode, refMoney.decimalPlaces),
                   style: const TextStyle(fontFamily: 'InterTight', fontWeight: FontWeight.w800, fontSize: 30, color: Colors.white),
                 ),
                 const SizedBox(height: 14),
                 Row(children: [
-                  _HeroStat(label: 'Assets', value: formatCurrency(totalAssets), color: NestColors.income),
+                  _HeroStat(label: 'Assets', value: formatCurrency(totalAssets, refMoney.currencyCode, refMoney.decimalPlaces), color: NestColors.income),
                   const SizedBox(width: 24),
-                  _HeroStat(label: 'Debt', value: formatCurrency(totalDebt), color: NestColors.expense),
+                  _HeroStat(label: 'Debt', value: formatCurrency(totalDebt, refMoney.currencyCode, refMoney.decimalPlaces), color: NestColors.expense),
                 ]),
               ]),
             ),
@@ -129,7 +130,7 @@ class _AccountList extends StatelessWidget {
               final color = _parseHex(a.color);
               final typeIdx = a.type.clamp(0, _typeLabels.length - 1);
               final isDebtAcct = a.type == 3 || a.type == 6;
-              final balColor = a.balance < 0 ? NestColors.expense : isDebtAcct ? NestColors.expense : NestColors.text1;
+              final balColor = a.balance.amount < 0 ? NestColors.expense : isDebtAcct ? NestColors.expense : NestColors.text1;
 
               return Padding(
                 padding: const EdgeInsets.fromLTRB(16, 0, 16, 10),
@@ -155,7 +156,7 @@ class _AccountList extends StatelessWidget {
                       ),
                     ])),
                     Text(
-                      formatCurrency(a.balance.abs()),
+                      formatCurrency(a.balance.amount.abs(), a.balance.currencyCode, a.balance.decimalPlaces),
                       style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: balColor, fontFamily: 'InterTight'),
                     ),
                   ]),

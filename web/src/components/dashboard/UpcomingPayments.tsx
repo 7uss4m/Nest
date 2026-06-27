@@ -1,11 +1,10 @@
 import { Icon } from "@/components/ui/Icon";
-import { formatCurrency } from "@/lib/utils";
+import { formatMoney, MoneyDto } from "@/lib/utils";
 
 export interface PaymentData {
   id: string;
   name: string;
-  amount: number;
-  currency: string;
+  amount: MoneyDto;
   dueDate: string;
   icon: string;
 }
@@ -60,7 +59,7 @@ export function UpcomingPayments({ payments }: { payments: PaymentData[] }) {
                   <div className="text-[11.5px]" style={{ color: dueColor }}>{dueText}</div>
                 </div>
                 <span className="text-[14px] font-semibold tabular">
-                  {formatCurrency(p.amount, p.currency)}
+                  {formatMoney(p.amount)}
                 </span>
               </div>
             );

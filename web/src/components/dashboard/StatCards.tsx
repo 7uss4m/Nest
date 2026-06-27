@@ -1,11 +1,10 @@
 import { Icon } from "@/components/ui/Icon";
-import { formatCurrency } from "@/lib/utils";
+import { formatMoney, MoneyDto } from "@/lib/utils";
 
 export interface StatCardsData {
-  income: number;
-  expense: number;
-  saved: number;
-  currency?: string;
+  income: MoneyDto;
+  expense: MoneyDto;
+  saved: MoneyDto;
 }
 
 interface StatCardProps {
@@ -51,8 +50,8 @@ function StatCard({ icon, iconColor, iconBg, label, amount, change, changeColor,
   );
 }
 
-export function StatCards({ income, expense, saved, currency = "USD" }: StatCardsData) {
-  const savingsRate = income > 0 ? Math.round((saved / income) * 100) : 0;
+export function StatCards({ income, expense, saved }: StatCardsData) {
+  const savingsRate = income.amount > 0 ? Math.round((saved.amount / income.amount) * 100) : 0;
 
   return (
     <div className="col-span-4 flex flex-col gap-[18px]">
@@ -61,7 +60,7 @@ export function StatCards({ income, expense, saved, currency = "USD" }: StatCard
         iconColor="#34D399"
         iconBg="rgba(52,211,153,0.14)"
         label="Income · this month"
-        amount={formatCurrency(income, currency)}
+        amount={formatMoney(income)}
         change="this month"
         changeColor="#5B6573"
       />
@@ -70,7 +69,7 @@ export function StatCards({ income, expense, saved, currency = "USD" }: StatCard
         iconColor="#FB7185"
         iconBg="rgba(251,113,133,0.14)"
         label="Expenses · this month"
-        amount={formatCurrency(expense, currency)}
+        amount={formatMoney(expense)}
         change="this month"
         changeColor="#5B6573"
       />
@@ -79,7 +78,7 @@ export function StatCards({ income, expense, saved, currency = "USD" }: StatCard
         iconColor="#818CF8"
         iconBg="rgba(99,102,241,0.2)"
         label="Saved · this month"
-        amount={formatCurrency(saved, currency)}
+        amount={formatMoney(saved)}
         change={`${savingsRate}% rate`}
         changeColor="#818CF8"
         gradient

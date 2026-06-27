@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { api } from "@/lib/api";
 import { getWorkspaceId, getUserDisplayName } from "@/lib/auth";
+import { MoneyDto } from "@/lib/utils";
 import { Topbar } from "@/components/layout/Topbar";
 import { NetWorthCard, NWHistoryEntry } from "@/components/dashboard/NetWorthCard";
 import { StatCards } from "@/components/dashboard/StatCards";
@@ -14,12 +15,12 @@ import { ActivityFeed, ActivityEvent } from "@/components/dashboard/ActivityFeed
 
 interface DashboardSummary {
   period: { year: number; month: number };
-  income: number;
-  expense: number;
-  saved: number;
+  income: MoneyDto;
+  expense: MoneyDto;
+  saved: MoneyDto;
   baseCurrency: string | null;
   accounts: { id: string; name: string; type: number; currency: string; color: string; icon: string }[];
-  upcomingPayments: { id: string; name: string; amount: number; currency: string; dueDate: string; icon: string }[];
+  upcomingPayments: { id: string; name: string; amount: MoneyDto; dueDate: string; icon: string }[];
 }
 
 interface CategorySpend {
@@ -39,7 +40,7 @@ interface Category {
 interface Budget {
   id: string;
   period: string;
-  amountLimit: number;
+  amountLimit: MoneyDto;
   rollover: boolean;
   categoryId: string;
 }
@@ -51,7 +52,7 @@ interface AccountDto {
   currency: string;
   color: string;
   icon: string;
-  balance: number;
+  balance: MoneyDto;
 }
 
 interface DashboardData {
@@ -225,7 +226,6 @@ export function DashboardClient() {
     id: p.id,
     name: p.name,
     amount: p.amount,
-    currency: p.currency,
     dueDate: p.dueDate,
     icon: p.icon,
   }));
@@ -242,7 +242,7 @@ export function DashboardClient() {
       <div className="flex-1 overflow-auto p-7">
         <div className="grid grid-cols-12 gap-[18px]">
           <NetWorthCard history={nwHistory} />
-          <StatCards income={summary.income} expense={summary.expense} saved={summary.saved} currency={summary.baseCurrency ?? undefined} />
+          <StatCards income={summary.income} expense={summary.expense} saved={summary.saved} />
           <BudgetHealth budgets={budgetItems} />
           <SpendingDonut categories={spendingCategories} total={spendingTotal} />
           <UpcomingPayments payments={paymentData} />

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { api } from "@/lib/api";
 import { getWorkspaceId } from "@/lib/auth";
-import { formatCurrency } from "@/lib/utils";
+import { formatMoney, MoneyDto } from "@/lib/utils";
 import { Topbar } from "@/components/layout/Topbar";
 import { Drawer } from "@/components/ui/Drawer";
 import { Icon } from "@/components/ui/Icon";
@@ -17,8 +17,7 @@ const PAYMENT_ICONS = [
 interface PlannedPayment {
   id: string;
   name: string;
-  amount: number;
-  currency: string;
+  amount: MoneyDto;
   dueDate: string;
   categoryId: string | null;
   isPaid: boolean;
@@ -83,7 +82,7 @@ function PaymentRow({ payment, onMarkPaid, onSkip, onDelete }: PaymentRowProps) 
         <div className="text-[11.5px] mt-[1px]" style={{ color: payment.isPaid ? "#5B6573" : dueColor }}>{dueText}</div>
       </div>
 
-      <div className="text-[14px] font-semibold tabular flex-shrink-0">{formatCurrency(payment.amount, payment.currency)}</div>
+      <div className="text-[14px] font-semibold tabular flex-shrink-0">{formatMoney(payment.amount)}</div>
 
       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
         {!payment.isPaid && (
