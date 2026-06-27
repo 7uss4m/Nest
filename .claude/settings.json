@@ -1,0 +1,5 @@
+{
+  "env": {
+    "FLUTTER_GIT_URL": "git@github.p:flutter/flutter.git"
+  }
+}

@@ -198,13 +198,13 @@ class _AppBarRow extends ConsumerWidget {
           onTap: () async {
             final ok = await showDialog<bool>(
               context: context,
-              builder: (_) => AlertDialog(
+              builder: (dialogCtx) => AlertDialog(
                 backgroundColor: NestColors.surface,
                 title: const Text('Sign out?', style: TextStyle(color: NestColors.text1)),
                 content: const Text('You will need to sign in again.', style: TextStyle(color: NestColors.text3)),
                 actions: [
-                  TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                  TextButton(onPressed: () => Navigator.pop(context, true), child: const Text('Sign out', style: TextStyle(color: NestColors.expense))),
+                  TextButton(onPressed: () => Navigator.pop(dialogCtx, false), child: const Text('Cancel')),
+                  TextButton(onPressed: () => Navigator.pop(dialogCtx, true), child: const Text('Sign out', style: TextStyle(color: NestColors.expense))),
                 ],
               ),
             );

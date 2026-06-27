@@ -23,17 +23,17 @@ Future<void> initLocalNotifications() async {
     requestSoundPermission: true,
   );
   await _plugin.initialize(
-    const InitializationSettings(android: android, iOS: ios),
+    settings: const InitializationSettings(android: android, iOS: ios),
   );
   _pluginInitialized = true;
 }
 
 Future<void> _showNotification(String title, String body) async {
   await _plugin.show(
-    _notifId++,
-    title,
-    body,
-    const NotificationDetails(
+    id: _notifId++,
+    title: title,
+    body: body,
+    notificationDetails: const NotificationDetails(
       android: AndroidNotificationDetails(
         'nest_payments',
         'Payment Reminders',

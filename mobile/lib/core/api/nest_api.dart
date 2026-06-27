@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:dio/io.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -30,6 +32,8 @@ class NestApi {
       receiveTimeout: const Duration(seconds: 20),
       headers: {'Content-Type': 'application/json'},
     ));
+    (_dio.httpClientAdapter as IOHttpClientAdapter).createHttpClient = () =>
+        HttpClient()..badCertificateCallback = (_, __, ___) => true;
   }
 
   // ── Session helpers ────────────────────────────────────────────────────────
@@ -122,7 +126,8 @@ class NestApi {
       final data = e.response?.data;
       if (data is Map) return data['message'] as String? ?? e.message ?? 'Request failed';
     } catch (_) {}
-    return e.message ?? 'Request failed';
+    final detail = '[${e.type.name}] ${e.message ?? ''} ${e.error ?? ''}';
+    return detail.trim();
   }
 
   // ── Auth ───────────────────────────────────────────────────────────────────

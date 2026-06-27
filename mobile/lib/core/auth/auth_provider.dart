@@ -32,90 +32,66 @@ class AuthSession {
 
 // ── Notifier ──────────────────────────────────────────────────────────────────
 
-class AuthNotifier extends StateNotifier<AsyncValue<AuthSession?>> {
-  final NestApi api;
+class AuthNotifier extends AsyncNotifier<AuthSession?> {
+  NestApi get _api => ref.read(nestApiProvider);
 
-  AuthNotifier(this.api) : super(const AsyncValue.loading()) {
-    _init();
-  }
-
-  Future<void> _init() async {
-    try {
-      final token = await api.readToken();
-      if (token == null) {
-        state = const AsyncValue.data(null);
-        return;
-      }
-      final storage = api.storage;
-      final session = AuthSession(
-        accessToken: token,
-        refreshToken: await storage.read(key: 'refreshToken') ?? '',
-        workspaceId: await storage.read(key: 'workspaceId') ?? '',
-        workspaceName: await storage.read(key: 'workspaceName') ?? 'My Finances',
-        displayName: await storage.read(key: 'displayName') ?? 'User',
-        email: await storage.read(key: 'email') ?? '',
-        userId: await storage.read(key: 'userId') ?? '',
-      );
-      state = AsyncValue.data(session);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-    }
+  @override
+  Future<AuthSession?> build() async {
+    final token = await _api.readToken();
+    if (token == null) return null;
+    final storage = _api.storage;
+    return AuthSession(
+      accessToken: token,
+      refreshToken: await storage.read(key: 'refreshToken') ?? '',
+      workspaceId: await storage.read(key: 'workspaceId') ?? '',
+      workspaceName: await storage.read(key: 'workspaceName') ?? 'My Finances',
+      displayName: await storage.read(key: 'displayName') ?? 'User',
+      email: await storage.read(key: 'email') ?? '',
+      userId: await storage.read(key: 'userId') ?? '',
+    );
   }
 
   Future<void> login(String email, String password) async {
-    state = const AsyncValue.loading();
-    try {
-      final result = await api.login(email, password);
-      final session = await _buildSession(result);
-      state = AsyncValue.data(session);
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-      rethrow;
-    }
+    final result = await _api.login(email, password);
+    final session = await _buildSession(result);
+    state = AsyncValue.data(session);
   }
 
   Future<void> register(String displayName, String email, String password) async {
-    state = const AsyncValue.loading();
-    try {
-      final result = await api.register(displayName, email, password);
-      // New user has no workspace — create "My Finances" automatically
-      await api.storage.write(key: 'accessToken', value: result.accessToken);
-      await api.storage.write(key: 'refreshToken', value: result.refreshToken);
-      final workspace = await api.createWorkspace('My Finances');
-      await api.saveSession(
-        accessToken: result.accessToken,
-        refreshToken: result.refreshToken,
-        workspaceId: workspace.id,
-        workspaceName: workspace.name,
-        displayName: result.user.displayName,
-        email: result.user.email,
-        userId: result.user.id,
-      );
-      state = AsyncValue.data(AuthSession(
-        accessToken: result.accessToken,
-        refreshToken: result.refreshToken,
-        workspaceId: workspace.id,
-        workspaceName: workspace.name,
-        displayName: result.user.displayName,
-        email: result.user.email,
-        userId: result.user.id,
-      ));
-    } catch (e, st) {
-      state = AsyncValue.error(e, st);
-      rethrow;
-    }
+    final result = await _api.register(displayName, email, password);
+    await _api.storage.write(key: 'accessToken', value: result.accessToken);
+    await _api.storage.write(key: 'refreshToken', value: result.refreshToken);
+    final workspace = await _api.createWorkspace('My Finances');
+    await _api.saveSession(
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+      workspaceId: workspace.id,
+      workspaceName: workspace.name,
+      displayName: result.user.displayName,
+      email: result.user.email,
+      userId: result.user.id,
+    );
+    state = AsyncValue.data(AuthSession(
+      accessToken: result.accessToken,
+      refreshToken: result.refreshToken,
+      workspaceId: workspace.id,
+      workspaceName: workspace.name,
+      displayName: result.user.displayName,
+      email: result.user.email,
+      userId: result.user.id,
+    ));
   }
 
   Future<void> logout() async {
-    await api.clearSession();
+    await _api.clearSession();
     state = const AsyncValue.data(null);
   }
 
   Future<void> switchWorkspace(WorkspaceDto ws) async {
-    final current = state.valueOrNull;
+    final current = state.value;
     if (current == null) return;
-    await api.storage.write(key: 'workspaceId', value: ws.id);
-    await api.storage.write(key: 'workspaceName', value: ws.name);
+    await _api.storage.write(key: 'workspaceId', value: ws.id);
+    await _api.storage.write(key: 'workspaceName', value: ws.name);
     state = AsyncValue.data(AuthSession(
       accessToken: current.accessToken,
       refreshToken: current.refreshToken,
@@ -128,16 +104,15 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthSession?>> {
   }
 
   Future<AuthSession> _buildSession(LoginResult result) async {
-    // Temporarily write tokens so authenticated calls work
-    await api.storage.write(key: 'accessToken', value: result.accessToken);
-    await api.storage.write(key: 'refreshToken', value: result.refreshToken);
+    await _api.storage.write(key: 'accessToken', value: result.accessToken);
+    await _api.storage.write(key: 'refreshToken', value: result.refreshToken);
 
-    final workspaces = await api.getWorkspaces();
+    final workspaces = await _api.getWorkspaces();
     final workspace = workspaces.isNotEmpty
         ? workspaces.first
-        : await api.createWorkspace('My Finances');
+        : await _api.createWorkspace('My Finances');
 
-    await api.saveSession(
+    await _api.saveSession(
       accessToken: result.accessToken,
       refreshToken: result.refreshToken,
       workspaceId: workspace.id,
@@ -162,9 +137,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<AuthSession?>> {
 // ── Providers ─────────────────────────────────────────────────────────────────
 
 final authNotifierProvider =
-    StateNotifierProvider<AuthNotifier, AsyncValue<AuthSession?>>((ref) {
-  return AuthNotifier(ref.read(nestApiProvider));
-});
+    AsyncNotifierProvider<AuthNotifier, AuthSession?>(() => AuthNotifier());
 
 // Convenience accessor — throws if not authenticated
 final authSessionProvider = Provider<AuthSession>((ref) {

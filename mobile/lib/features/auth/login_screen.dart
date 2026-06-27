@@ -35,7 +35,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       await ref.read(authNotifierProvider.notifier).login(email, password);
       // Router redirect handles navigation to /dashboard
     } catch (e) {
-      setState(() { _error = e.toString(); });
+      if (mounted) setState(() { _error = e.toString(); });
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -51,8 +51,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             constraints: BoxConstraints(minHeight: MediaQuery.of(context).size.height - MediaQuery.of(context).padding.vertical - 48),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                const Spacer(),
+                const SizedBox(height: 48),
                 Container(
                   width: 52, height: 52,
                   decoration: BoxDecoration(
@@ -145,7 +146,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                   ),
                 ),
-                const Spacer(flex: 2),
+                const SizedBox(height: 48),
               ],
             ),
           ),
