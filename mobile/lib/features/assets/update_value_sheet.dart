@@ -20,7 +20,7 @@ class _UpdateValueSheetState extends ConsumerState<UpdateValueSheet> {
   @override
   void initState() {
     super.initState();
-    _ctrl = TextEditingController(text: widget.asset.currentValue.amount.toStringAsFixed(widget.asset.currentValue.decimalPlaces));
+    _ctrl = TextEditingController(text: widget.asset.currentValue.amount.toStringAsFixed(2));
   }
 
   @override

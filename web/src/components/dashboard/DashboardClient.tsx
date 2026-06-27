@@ -18,7 +18,7 @@ interface DashboardSummary {
   income: MoneyDto;
   expense: MoneyDto;
   saved: MoneyDto;
-  baseCurrency: string | null;
+  displayCurrency: string;
   accounts: { id: string; name: string; type: number; currency: string; color: string; icon: string }[];
   upcomingPayments: { id: string; name: string; amount: MoneyDto; dueDate: string; icon: string }[];
 }

@@ -132,14 +132,14 @@ class _AssetList extends ConsumerWidget {
                 const Text('Total Assets', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white70)),
                 const SizedBox(height: 6),
                 Text(
-                  formatCurrency(totalValue, refMoney.currencyCode, refMoney.decimalPlaces),
+                  formatCurrency(totalValue, refMoney.currencyCode),
                   style: const TextStyle(fontFamily: 'InterTight', fontWeight: FontWeight.w800, fontSize: 30, color: Colors.white),
                 ),
                 const SizedBox(height: 14),
                 Row(children: [
-                  _HeroStat(label: 'Physical', value: formatCurrency(physicalTotal, refMoney.currencyCode, refMoney.decimalPlaces), color: NestColors.indigoL),
+                  _HeroStat(label: 'Physical', value: formatCurrency(physicalTotal, refMoney.currencyCode), color: NestColors.indigoL),
                   const SizedBox(width: 24),
-                  _HeroStat(label: 'Financial', value: formatCurrency(financialTotal, refMoney.currencyCode, refMoney.decimalPlaces), color: NestColors.teal),
+                  _HeroStat(label: 'Financial', value: formatCurrency(financialTotal, refMoney.currencyCode), color: NestColors.teal),
                 ]),
               ]),
             ),

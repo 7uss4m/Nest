@@ -25,7 +25,6 @@ public class BudgetsController(INestDbContext db) : ControllerBase
     {
         if (!await HasAccessAsync(workspaceId)) return Forbid();
 
-        var decimals = await CurrencyHelper.LoadDecimalsAsync(db, workspaceId);
         var defaultCode = await CurrencyHelper.LoadDefaultCodeAsync(db, workspaceId);
 
         var budgets = await db.Budgets
@@ -36,7 +35,7 @@ public class BudgetsController(INestDbContext db) : ControllerBase
         return Ok(budgets.Select(b => new
         {
             b.Id, b.Period, b.Rollover, b.CategoryId, b.CreatedAt,
-            AmountLimit = CurrencyHelper.ToMoney(b.AmountLimit, defaultCode, decimals),
+            AmountLimit = CurrencyHelper.ToMoney(b.AmountLimit, defaultCode),
         }));
     }
 

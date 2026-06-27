@@ -316,12 +316,10 @@ class NestApi {
 class MoneyDto {
   final double amount;
   final String currencyCode;
-  final int decimalPlaces;
-  const MoneyDto({required this.amount, required this.currencyCode, required this.decimalPlaces});
+  const MoneyDto({required this.amount, required this.currencyCode});
   factory MoneyDto.fromJson(Map<String, dynamic> j) => MoneyDto(
     amount: (j['amount'] as num).toDouble(),
     currencyCode: j['currencyCode'] as String? ?? 'USD',
-    decimalPlaces: (j['decimalPlaces'] as num?)?.toInt() ?? 2,
   );
   static MoneyDto? fromJsonNullable(dynamic raw) =>
       raw == null ? null : MoneyDto.fromJson(raw as Map<String, dynamic>);
@@ -664,7 +662,7 @@ class AuthException extends ApiException {
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 String formatMoney(MoneyDto money) =>
-    formatCurrency(money.amount, money.currencyCode, money.decimalPlaces);
+    formatCurrency(money.amount, money.currencyCode);
 
 String formatCurrency(double amount, [String currency = 'USD', int decimals = 2]) {
   final sign = amount < 0 ? '-' : '';

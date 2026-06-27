@@ -244,7 +244,7 @@ export default function AssetsPage() {
 
   const isPhysical = parseInt(form.assetClass) === 0;
   const totalValue = assets.reduce((s, a) => s + a.currentValue.amount, 0);
-  const defaultMoney = assets[0]?.currentValue ?? { amount: 0, currencyCode: "USD", decimalPlaces: 2 };
+  const defaultMoney = assets[0]?.currentValue ?? { amount: 0, currencyCode: "USD" };
   const byType = ASSET_TYPE_LABELS.map((label, i) => ({
     label, count: assets.filter((a) => a.assetType === i).length,
     value: assets.filter((a) => a.assetType === i).reduce((s, a) => s + a.currentValue.amount, 0),

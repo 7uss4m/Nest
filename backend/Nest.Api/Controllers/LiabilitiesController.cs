@@ -26,14 +26,13 @@ public class LiabilitiesController(INestDbContext db) : ControllerBase
         if (!await HasAccessAsync(workspaceId)) return Forbid();
 
         var liabilities = await db.Liabilities.Where(l => l.WorkspaceId == workspaceId).ToListAsync();
-        var decimals = await CurrencyHelper.LoadDecimalsAsync(db, workspaceId);
 
         return Ok(liabilities.Select(l => new
         {
             l.Id, l.Name, l.Type, l.LenderName,
-            OriginalAmount = CurrencyHelper.ToMoney(l.OriginalAmount, l.Currency, decimals),
-            CurrentBalance = CurrencyHelper.ToMoney(l.CurrentBalance, l.Currency, decimals),
-            MonthlyPayment = CurrencyHelper.ToMoney(l.MonthlyPayment, l.Currency, decimals),
+            OriginalAmount = CurrencyHelper.ToMoney(l.OriginalAmount, l.Currency),
+            CurrentBalance = CurrencyHelper.ToMoney(l.CurrentBalance, l.Currency),
+            MonthlyPayment = CurrencyHelper.ToMoney(l.MonthlyPayment, l.Currency),
             l.InterestRate, l.StartDate, l.DueDate,
             l.LinkedAssetId, l.IsShared, l.Notes, l.CreatedAt,
         }));
@@ -51,20 +50,19 @@ public class LiabilitiesController(INestDbContext db) : ControllerBase
 
         if (liability is null) return NotFound();
 
-        var decimals = await CurrencyHelper.LoadDecimalsAsync(db, workspaceId);
         return Ok(new
         {
             liability.Id, liability.Name, liability.Type, liability.LenderName,
-            OriginalAmount = CurrencyHelper.ToMoney(liability.OriginalAmount, liability.Currency, decimals),
-            CurrentBalance = CurrencyHelper.ToMoney(liability.CurrentBalance, liability.Currency, decimals),
-            MonthlyPayment = CurrencyHelper.ToMoney(liability.MonthlyPayment, liability.Currency, decimals),
+            OriginalAmount = CurrencyHelper.ToMoney(liability.OriginalAmount, liability.Currency),
+            CurrentBalance = CurrencyHelper.ToMoney(liability.CurrentBalance, liability.Currency),
+            MonthlyPayment = CurrencyHelper.ToMoney(liability.MonthlyPayment, liability.Currency),
             liability.InterestRate, liability.StartDate, liability.DueDate,
             liability.LinkedAssetId, liability.IsShared, liability.Notes, liability.CreatedAt,
             BalanceHistory = liability.BalanceHistory
                 .OrderBy(h => h.CreatedAt)
                 .Select(h => new
                 {
-                    Balance = CurrencyHelper.ToMoney(h.Balance, liability.Currency, decimals),
+                    Balance = CurrencyHelper.ToMoney(h.Balance, liability.Currency),
                     h.CreatedAt,
                 })
                 .ToList(),

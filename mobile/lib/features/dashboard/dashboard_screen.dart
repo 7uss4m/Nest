@@ -286,7 +286,7 @@ class _NetWorthCard extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           Text(
-            formatCurrency(netWorth, income.currencyCode, income.decimalPlaces),
+            formatCurrency(netWorth, income.currencyCode),
             style: const TextStyle(fontFamily: 'InterTight', fontSize: 34, fontWeight: FontWeight.w800, color: Color(0xFF0B0E14), letterSpacing: -1),
           ),
           const SizedBox(height: 8),
@@ -306,7 +306,7 @@ class _NetWorthCard extends StatelessWidget {
             ),
             const SizedBox(width: 8),
             Text(
-              '${isPositive ? "+" : ""}${formatCurrency(saved, income.currencyCode, income.decimalPlaces)} saved this month',
+              '${isPositive ? "+" : ""}${formatCurrency(saved, income.currencyCode)} saved this month',
               style: TextStyle(fontSize: 12, color: const Color(0xFF0B0E14).withOpacity(0.65), fontWeight: FontWeight.w500),
             ),
           ]),

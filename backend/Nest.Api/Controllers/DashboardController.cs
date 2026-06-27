@@ -72,7 +72,6 @@ public class DashboardController(INestDbContext db) : ControllerBase
         var incomeRaw  = transactions.Where(t => t.Type == TransactionType.Income) .Sum(t => Convert(t.Amount, t.Currency));
         var expenseRaw = transactions.Where(t => t.Type == TransactionType.Expense).Sum(t => Convert(t.Amount, t.Currency));
 
-        var decimals = await CurrencyHelper.LoadDecimalsAsync(db, workspaceId);
         var displayCode = !string.IsNullOrWhiteSpace(baseCurrency)
             ? baseCurrency.ToUpper()
             : await CurrencyHelper.LoadDefaultCodeAsync(db, workspaceId);
@@ -93,15 +92,15 @@ public class DashboardController(INestDbContext db) : ControllerBase
         return Ok(new
         {
             period = new { year = y, month = m },
-            income  = CurrencyHelper.ToMoney(incomeRaw, displayCode, decimals),
-            expense = CurrencyHelper.ToMoney(expenseRaw, displayCode, decimals),
-            saved   = CurrencyHelper.ToMoney(incomeRaw - expenseRaw, displayCode, decimals),
+            income  = CurrencyHelper.ToMoney(incomeRaw, displayCode),
+            expense = CurrencyHelper.ToMoney(expenseRaw, displayCode),
+            saved   = CurrencyHelper.ToMoney(incomeRaw - expenseRaw, displayCode),
             displayCurrency = displayCode,
             accounts,
             upcomingPayments = upcomingRaw.Select(p => new
             {
                 p.Id, p.Name, p.DueDate, p.Icon,
-                Amount = CurrencyHelper.ToMoney(p.Amount, p.Currency, decimals),
+                Amount = CurrencyHelper.ToMoney(p.Amount, p.Currency),
             }).ToList(),
         });
     }

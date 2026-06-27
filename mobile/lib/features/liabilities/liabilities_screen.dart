@@ -118,14 +118,14 @@ class _LiabilityList extends ConsumerWidget {
                 const Text('Total Debt', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white70)),
                 const SizedBox(height: 6),
                 Text(
-                  formatCurrency(totalDebt, refMoney.currencyCode, refMoney.decimalPlaces),
+                  formatCurrency(totalDebt, refMoney.currencyCode),
                   style: const TextStyle(fontFamily: 'InterTight', fontWeight: FontWeight.w800, fontSize: 30, color: Colors.white),
                 ),
                 const SizedBox(height: 14),
                 Row(children: [
-                  _HeroStat(label: 'Original', value: formatCurrency(totalOriginal, refMoney.currencyCode, refMoney.decimalPlaces), color: Colors.white70),
+                  _HeroStat(label: 'Original', value: formatCurrency(totalOriginal, refMoney.currencyCode), color: Colors.white70),
                   const SizedBox(width: 24),
-                  _HeroStat(label: 'Paid Off', value: formatCurrency(totalPaid, refMoney.currencyCode, refMoney.decimalPlaces), color: NestColors.income),
+                  _HeroStat(label: 'Paid Off', value: formatCurrency(totalPaid, refMoney.currencyCode), color: NestColors.income),
                 ]),
               ]),
             ),

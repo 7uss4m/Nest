@@ -110,14 +110,14 @@ class _AccountList extends StatelessWidget {
                 const Text('Net Balance', style: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: Colors.white70)),
                 const SizedBox(height: 6),
                 Text(
-                  formatCurrency(net, refMoney.currencyCode, refMoney.decimalPlaces),
+                  formatCurrency(net, refMoney.currencyCode),
                   style: const TextStyle(fontFamily: 'InterTight', fontWeight: FontWeight.w800, fontSize: 30, color: Colors.white),
                 ),
                 const SizedBox(height: 14),
                 Row(children: [
-                  _HeroStat(label: 'Assets', value: formatCurrency(totalAssets, refMoney.currencyCode, refMoney.decimalPlaces), color: NestColors.income),
+                  _HeroStat(label: 'Assets', value: formatCurrency(totalAssets, refMoney.currencyCode), color: NestColors.income),
                   const SizedBox(width: 24),
-                  _HeroStat(label: 'Debt', value: formatCurrency(totalDebt, refMoney.currencyCode, refMoney.decimalPlaces), color: NestColors.expense),
+                  _HeroStat(label: 'Debt', value: formatCurrency(totalDebt, refMoney.currencyCode), color: NestColors.expense),
                 ]),
               ]),
             ),
@@ -156,7 +156,7 @@ class _AccountList extends StatelessWidget {
                       ),
                     ])),
                     Text(
-                      formatCurrency(a.balance.amount.abs(), a.balance.currencyCode, a.balance.decimalPlaces),
+                      formatCurrency(a.balance.amount.abs(), a.balance.currencyCode),
                       style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: balColor, fontFamily: 'InterTight'),
                     ),
                   ]),

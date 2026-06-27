@@ -42,11 +42,10 @@ public class PlannedPaymentsController(INestDbContext db) : ControllerBase
             })
             .ToListAsync();
 
-        var decimals = await CurrencyHelper.LoadDecimalsAsync(db, workspaceId);
         return Ok(raw.Select(p => new
         {
             p.Id, p.Name, p.DueDate, p.CategoryId, p.IsPaid, p.SkippedUntil, p.Note, p.Icon, p.CreatedAt,
-            Amount = CurrencyHelper.ToMoney(p.Amount, p.Currency, decimals),
+            Amount = CurrencyHelper.ToMoney(p.Amount, p.Currency),
         }));
     }
 

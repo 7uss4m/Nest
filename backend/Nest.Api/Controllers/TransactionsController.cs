@@ -81,11 +81,10 @@ public class TransactionsController(INestDbContext db) : ControllerBase
             })
             .ToListAsync();
 
-        var decimals = await CurrencyHelper.LoadDecimalsAsync(db, workspaceId);
         var items = rawItems.Select(t => new
         {
             t.Id, t.Type,
-            Amount = CurrencyHelper.ToMoney(t.Amount, t.CurrencyCode, decimals),
+            Amount = CurrencyHelper.ToMoney(t.Amount, t.CurrencyCode),
             t.Date, t.Note, t.Payee, t.AccountId, t.CategoryId,
             t.IsRecurring, t.CreatedAt,
         }).ToList();
@@ -110,11 +109,10 @@ public class TransactionsController(INestDbContext db) : ControllerBase
             .FirstOrDefaultAsync();
 
         if (raw is null) return NotFound();
-        var decimals = await CurrencyHelper.LoadDecimalsAsync(db, workspaceId);
         return Ok(new
         {
             raw.Id, raw.Type,
-            Amount = CurrencyHelper.ToMoney(raw.Amount, raw.CurrencyCode, decimals),
+            Amount = CurrencyHelper.ToMoney(raw.Amount, raw.CurrencyCode),
             raw.Date, raw.Note, raw.Payee,
             raw.AccountId, raw.CategoryId, raw.IsRecurring, raw.CreatedAt, raw.UpdatedAt,
         });

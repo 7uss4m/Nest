@@ -110,13 +110,13 @@ class _BudgetList extends StatelessWidget {
                   border: Border.all(color: NestColors.border),
                 ),
                 child: Row(children: [
-                  _SummaryItem(label: 'Budgeted', value: formatCurrency(totalBudgeted, refMoney.currencyCode, refMoney.decimalPlaces), color: NestColors.indigoL),
+                  _SummaryItem(label: 'Budgeted', value: formatCurrency(totalBudgeted, refMoney.currencyCode), color: NestColors.indigoL),
                   const _Divider(),
-                  _SummaryItem(label: 'Spent', value: formatCurrency(totalSpent, refMoney.currencyCode, refMoney.decimalPlaces), color: NestColors.expense),
+                  _SummaryItem(label: 'Spent', value: formatCurrency(totalSpent, refMoney.currencyCode), color: NestColors.expense),
                   const _Divider(),
                   _SummaryItem(
                     label: 'Remaining',
-                    value: formatCurrency((totalBudgeted - totalSpent).clamp(0, double.infinity), refMoney.currencyCode, refMoney.decimalPlaces),
+                    value: formatCurrency((totalBudgeted - totalSpent).clamp(0, double.infinity), refMoney.currencyCode),
                     color: NestColors.income,
                   ),
                 ]),
@@ -167,7 +167,7 @@ class _BudgetList extends StatelessWidget {
                             child: const Text('OVER', style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: NestColors.expense)),
                           ),
                         Text(
-                          '${formatCurrency(spent, b.amountLimit.currencyCode, b.amountLimit.decimalPlaces)} / ${formatMoney(b.amountLimit)}',
+                          '${formatCurrency(spent, b.amountLimit.currencyCode)} / ${formatMoney(b.amountLimit)}',
                           style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w600, color: isOver ? NestColors.expense : NestColors.text1),
                         ),
                       ]),

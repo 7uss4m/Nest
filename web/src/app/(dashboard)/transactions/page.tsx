@@ -258,7 +258,7 @@ export default function TransactionsPage() {
       ...res.items.map((t) => [
         t.date,
         t.type === 0 ? "Income" : t.type === 1 ? "Expense" : "Transfer",
-        t.amount.amount.toFixed(t.amount.decimalPlaces),
+        t.amount.amount.toFixed(2),
         accountMap.get(t.accountId)?.name ?? t.accountId,
         t.categoryId ? (categoryMap.get(t.categoryId)?.name ?? t.categoryId) : "",
         t.payee ?? "",
@@ -731,7 +731,7 @@ export default function TransactionsPage() {
                   </div>
                   {t.amount != null && (
                     <div className="text-[13px] font-semibold tabular" style={{ color: TX_TYPE_COLORS[t.type] }}>
-                      {acc ? formatMoney({ amount: t.amount, currencyCode: acc.currency, decimalPlaces: 2 }) : t.amount.toFixed(2)}
+                      {acc ? formatMoney({ amount: t.amount, currencyCode: acc.currency }) : t.amount.toFixed(2)}
                     </div>
                   )}
                   <button

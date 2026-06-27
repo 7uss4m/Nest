@@ -26,13 +26,12 @@ public class AssetsController(INestDbContext db) : ControllerBase
         if (!await HasAccessAsync(workspaceId)) return Forbid();
 
         var assets = await db.Assets.Where(a => a.WorkspaceId == workspaceId).ToListAsync();
-        var decimals = await CurrencyHelper.LoadDecimalsAsync(db, workspaceId);
 
         return Ok(assets.Select(a => new
         {
             a.Id, a.Name, a.Description, a.AssetClass, a.AssetType,
-            CurrentValue = CurrencyHelper.ToMoney(a.CurrentValue, a.Currency, decimals),
-            PurchasePrice = CurrencyHelper.ToMoney(a.PurchasePrice, a.PurchaseCurrency, decimals),
+            CurrentValue = CurrencyHelper.ToMoney(a.CurrentValue, a.Currency),
+            PurchasePrice = CurrencyHelper.ToMoney(a.PurchasePrice, a.PurchaseCurrency),
             a.PurchaseDate, a.Institution, a.Condition, a.Location,
             a.IsShared, a.Notes, a.CreatedAt, a.CurrentValueUpdatedAt,
         }));
@@ -50,19 +49,18 @@ public class AssetsController(INestDbContext db) : ControllerBase
 
         if (asset is null) return NotFound();
 
-        var decimals = await CurrencyHelper.LoadDecimalsAsync(db, workspaceId);
         return Ok(new
         {
             asset.Id, asset.Name, asset.Description, asset.AssetClass, asset.AssetType,
-            CurrentValue = CurrencyHelper.ToMoney(asset.CurrentValue, asset.Currency, decimals),
-            PurchasePrice = CurrencyHelper.ToMoney(asset.PurchasePrice, asset.PurchaseCurrency, decimals),
+            CurrentValue = CurrencyHelper.ToMoney(asset.CurrentValue, asset.Currency),
+            PurchasePrice = CurrencyHelper.ToMoney(asset.PurchasePrice, asset.PurchaseCurrency),
             asset.PurchaseDate, asset.Institution, asset.Condition, asset.Location,
             asset.IsShared, asset.Notes, asset.CreatedAt, asset.CurrentValueUpdatedAt,
             ValueHistory = asset.ValueHistory
                 .OrderBy(h => h.CreatedAt)
                 .Select(h => new
                 {
-                    Value = CurrencyHelper.ToMoney(h.Value, asset.Currency, decimals),
+                    Value = CurrencyHelper.ToMoney(h.Value, asset.Currency),
                     h.CreatedAt,
                 })
                 .ToList(),

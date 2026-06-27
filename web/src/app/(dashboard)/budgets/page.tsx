@@ -151,7 +151,7 @@ export default function BudgetsPage() {
   const availableCategories = expenseCategories.filter((c) => !budgetCategoryIds.has(c.id));
 
   const totalBudgeted = budgets.reduce((s, b) => s + b.amountLimit.amount, 0);
-  const defaultMoney = budgets[0]?.amountLimit ?? { amount: 0, currencyCode: "USD", decimalPlaces: 2 };
+  const defaultMoney = budgets[0]?.amountLimit ?? { amount: 0, currencyCode: "USD" };
   const totalSpent = budgets.reduce((s, b) => s + (spendMap.get(b.categoryId) ?? 0), 0);
 
   const actions = (

@@ -20,7 +20,7 @@ class _UpdateBalanceSheetState extends ConsumerState<UpdateBalanceSheet> {
   @override
   void initState() {
     super.initState();
-    _ctrl = TextEditingController(text: widget.liability.currentBalance.amount.toStringAsFixed(widget.liability.currentBalance.decimalPlaces));
+    _ctrl = TextEditingController(text: widget.liability.currentBalance.amount.toStringAsFixed(2));
   }
 
   @override

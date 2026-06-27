@@ -252,7 +252,7 @@ export default function LiabilitiesPage() {
 
   const totalDebt = liabilities.reduce((s, l) => s + l.currentBalance.amount, 0);
   const totalOriginal = liabilities.reduce((s, l) => s + l.originalAmount.amount, 0);
-  const refMoney = liabilities[0]?.currentBalance ?? { amount: 0, currencyCode: "USD", decimalPlaces: 2 };
+  const refMoney = liabilities[0]?.currentBalance ?? { amount: 0, currencyCode: "USD" };
 
   const byType = LIABILITY_TYPE_LABELS.map((label, i) => ({
     label, count: liabilities.filter((l) => l.type === i).length,

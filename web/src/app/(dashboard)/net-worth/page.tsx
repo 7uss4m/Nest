@@ -115,7 +115,7 @@ export default function NetWorthPage() {
   const totalLiabilities = liabilities.reduce((s, l) => s + l.currentBalance.amount, 0);
   const netWorth = totalAssets - totalLiabilities;
   const isPositive = netWorth >= 0;
-  const refMoney = assets[0]?.currentValue ?? liabilities[0]?.currentBalance ?? { amount: 0, currencyCode: "USD", decimalPlaces: 2 };
+  const refMoney = assets[0]?.currentValue ?? liabilities[0]?.currentBalance ?? { amount: 0, currencyCode: "USD" };
 
   const prevNW = history.length >= 2 ? history[history.length - 2].netWorth : null;
   const momChange = prevNW != null && prevNW !== 0 ? ((netWorth - prevNW) / Math.abs(prevNW)) * 100 : null;

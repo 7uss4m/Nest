@@ -78,7 +78,7 @@ class _NetWorthBody extends StatelessWidget {
         ? data.assets.first.currentValue
         : data.liabilities.isNotEmpty
         ? data.liabilities.first.currentBalance
-        : const MoneyDto(amount: 0, currencyCode: 'USD', decimalPlaces: 2);
+        : const MoneyDto(amount: 0, currencyCode: 'USD');
     final netWorth = totalAssets - totalLiabilities;
 
     // MoM change from history
@@ -111,7 +111,7 @@ class _NetWorthBody extends StatelessWidget {
             const SizedBox(height: 6),
             Row(crossAxisAlignment: CrossAxisAlignment.end, children: [
               Text(
-                formatCurrency(netWorth, refMoney.currencyCode, refMoney.decimalPlaces),
+                formatCurrency(netWorth, refMoney.currencyCode),
                 style: const TextStyle(fontFamily: 'InterTight', fontWeight: FontWeight.w800, fontSize: 32, color: Colors.white),
               ),
               if (momChange != null) ...[
@@ -144,14 +144,14 @@ class _NetWorthBody extends StatelessWidget {
         Row(children: [
           Expanded(child: _SplitCard(
             label: 'Assets',
-            valueStr: formatCurrency(totalAssets, refMoney.currencyCode, refMoney.decimalPlaces),
+            valueStr: formatCurrency(totalAssets, refMoney.currencyCode),
             color: NestColors.income,
             icon: Icons.diamond_outlined,
           )),
           const SizedBox(width: 10),
           Expanded(child: _SplitCard(
             label: 'Liabilities',
-            valueStr: formatCurrency(totalLiabilities, refMoney.currencyCode, refMoney.decimalPlaces),
+            valueStr: formatCurrency(totalLiabilities, refMoney.currencyCode),
             color: NestColors.expense,
             icon: Icons.trending_down,
           )),

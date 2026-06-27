@@ -29,8 +29,7 @@ public class AccountsController(INestDbContext db) : ControllerBase
             .ToListAsync();
 
         var balances = await GetBalances(accounts.Select(a => a.Id).ToList());
-        var decimals = await CurrencyHelper.LoadDecimalsAsync(db, workspaceId);
-        return Ok(accounts.Select(a => ToDto(a, balances.GetValueOrDefault(a.Id), decimals)).ToList());
+        return Ok(accounts.Select(a => ToDto(a, balances.GetValueOrDefault(a.Id))).ToList());
     }
 
     [HttpPost]
@@ -51,8 +50,7 @@ public class AccountsController(INestDbContext db) : ControllerBase
         };
         db.Accounts.Add(account);
         await db.SaveChangesAsync();
-        var decimals = await CurrencyHelper.LoadDecimalsAsync(db, workspaceId);
-        return CreatedAtAction(nameof(GetAll), new { workspaceId }, ToDto(account, 0, decimals));
+        return CreatedAtAction(nameof(GetAll), new { workspaceId }, ToDto(account, 0));
     }
 
     [HttpPut("{id:guid}")]
@@ -70,8 +68,7 @@ public class AccountsController(INestDbContext db) : ControllerBase
 
         await db.SaveChangesAsync();
         var balances = await GetBalances([id]);
-        var decimals = await CurrencyHelper.LoadDecimalsAsync(db, workspaceId);
-        return Ok(ToDto(account, balances.GetValueOrDefault(id), decimals));
+        return Ok(ToDto(account, balances.GetValueOrDefault(id)));
     }
 
     [HttpDelete("{id:guid}")]
@@ -142,9 +139,9 @@ public class AccountsController(INestDbContext db) : ControllerBase
         return minRole is null || m.Role <= minRole;
     }
 
-    private static AccountDto ToDto(Account a, decimal balance, Dictionary<string, int> decimals) => new(
+    private static AccountDto ToDto(Account a, decimal balance) => new(
         a.Id, a.WorkspaceId, a.Name, a.Type, a.Currency,
         a.Color, a.Icon, a.IsShared,
-        CurrencyHelper.ToMoney(balance, a.Currency, decimals),
+        CurrencyHelper.ToMoney(balance, a.Currency),
         a.CreatedAt);
 }
