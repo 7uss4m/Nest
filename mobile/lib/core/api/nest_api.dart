@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 // ── Base URL ──────────────────────────────────────────────────────────────────
 // 10.0.2.2 = Android emulator → host machine's localhost.
 // For a physical device, replace with your host's LAN IP (e.g. http://192.168.1.x:5000).
-const _kBaseUrl = 'http://10.0.2.2:5000';
+const _kBaseUrl = 'https://api.nest.com';
 
 // ── Provider ──────────────────────────────────────────────────────────────────
 

@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using System;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -10,22 +11,32 @@ namespace Nest.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_ApiKeys_AspNetUsers_UserId",
-                table: "ApiKeys");
+            migrationBuilder.CreateTable(
+                name: "ApiKeys",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    KeyHash = table.Column<string>(type: "text", nullable: false),
+                    Prefix = table.Column<string>(type: "text", nullable: false),
+                    LastUsedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    ExpiresAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    IsRevoked = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ApiKeys", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ApiKeys_AspNetUsers_UserId",
+                        column: x => x.UserId,
+                        principalTable: "AspNetUsers",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
 
-            migrationBuilder.DropIndex(
-                name: "IX_ApiKeys_KeyHash",
-                table: "ApiKeys");
-
-            migrationBuilder.DropIndex(
-                name: "IX_ApiKeys_UserId",
-                table: "ApiKeys");
-        }
-
-        /// <inheritdoc />
-        protected override void Down(MigrationBuilder migrationBuilder)
-        {
             migrationBuilder.CreateIndex(
                 name: "IX_ApiKeys_KeyHash",
                 table: "ApiKeys",
@@ -36,14 +47,12 @@ namespace Nest.Infrastructure.Migrations
                 name: "IX_ApiKeys_UserId",
                 table: "ApiKeys",
                 column: "UserId");
+        }
 
-            migrationBuilder.AddForeignKey(
-                name: "FK_ApiKeys_AspNetUsers_UserId",
-                table: "ApiKeys",
-                column: "UserId",
-                principalTable: "AspNetUsers",
-                principalColumn: "Id",
-                onDelete: ReferentialAction.Cascade);
+        /// <inheritdoc />
+        protected override void Down(MigrationBuilder migrationBuilder)
+        {
+            migrationBuilder.DropTable(name: "ApiKeys");
         }
     }
 }
