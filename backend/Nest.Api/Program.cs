@@ -20,6 +20,9 @@ builder.Services.AddCors(opts => opts.AddPolicy("nest", policy =>
         .AllowAnyMethod()
         .AllowCredentials()));
 
+var swaggerEnabled = builder.Configuration["Swagger:Enabled"] == "true";
+var swaggerKey     = builder.Configuration["Swagger:ApiKey"] ?? "";
+
 var app = builder.Build();
 
 // Apply pending migrations on startup
@@ -29,8 +32,23 @@ using (var scope = app.Services.CreateScope())
     await db.Database.MigrateAsync();
 }
 
-if (app.Environment.IsDevelopment())
+if (swaggerEnabled)
 {
+    app.Use(async (ctx, next) =>
+    {
+        if (ctx.Request.Path.StartsWithSegments("/swagger"))
+        {
+            var provided = ctx.Request.Query["key"].FirstOrDefault()
+                        ?? ctx.Request.Headers["X-Swagger-Key"].FirstOrDefault();
+            if (!string.IsNullOrEmpty(swaggerKey) && provided != swaggerKey)
+            {
+                ctx.Response.StatusCode = 401;
+                await ctx.Response.WriteAsync("Unauthorized");
+                return;
+            }
+        }
+        await next();
+    });
     app.UseSwagger();
     app.UseSwaggerUI();
 }
