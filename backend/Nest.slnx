@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="Nest.Api/Nest.Api.csproj" />
+  <Project Path="Nest.Application/Nest.Application.csproj" />
+  <Project Path="Nest.Domain/Nest.Domain.csproj" />
+  <Project Path="Nest.Infrastructure/Nest.Infrastructure.csproj" />
+</Solution>

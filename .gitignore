@@ -1,0 +1,33 @@
+# .env with real secrets — never commit
+.env
+
+# Internal planning notes — not for public repo
+TODO.md
+expense-tracker-plan.md
+
+# .NET
+backend/*/bin/
+backend/*/obj/
+backend/*.user
+
+# Node
+web/node_modules/
+web/.next/
+web/.env.local
+
+# Flutter
+mobile/.dart_tool/
+mobile/build/
+mobile/.flutter-plugins
+mobile/.flutter-plugins-dependencies
+mobile/pubspec.lock
+
+# IDEs
+.idea/
+.vscode/
+*.suo
+*.user
+
+# OS
+.DS_Store
+Thumbs.db

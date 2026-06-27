@@ -1,0 +1,100 @@
+@import "tailwindcss";
+
+/* Fonts are loaded via <link> tags in src/app/layout.tsx — a CSS @import here
+   gets stripped by Tailwind v4 / Lightning CSS because it ends up after the
+   inlined Tailwind rules (an illegal @import position). */
+
+:root {
+  /* Base surfaces */
+  --c-base:    #0B0E14;
+  --c-surface: #141925;
+  --c-sidebar: #0E121B;
+
+  /* Brand */
+  --c-indigo:  #6366F1;
+  --c-indigo-l:#818CF8;
+  --c-teal:    #2DD4BF;
+
+  /* Semantic */
+  --c-income:  #34D399;
+  --c-expense: #FB7185;
+  --c-amber:   #FBBF24;
+  --c-violet:  #A78BFA;
+  --c-sky:     #38BDF8;
+
+  /* Text */
+  --c-text-1:  #EEF1F6;
+  --c-text-2:  #C4CBD6;
+  --c-text-3:  #98A2B3;
+  --c-text-4:  #5B6573;
+  --c-text-5:  #4B5462;
+
+  /* Border */
+  --c-border:  rgba(255,255,255,0.07);
+  --c-border-s:rgba(255,255,255,0.06);
+}
+
+@theme inline {
+  --color-base:    var(--c-base);
+  --color-surface: var(--c-surface);
+  --color-sidebar: var(--c-sidebar);
+  --color-indigo:  var(--c-indigo);
+  --color-indigo-l:var(--c-indigo-l);
+  --color-teal:    var(--c-teal);
+  --color-income:  var(--c-income);
+  --color-expense: var(--c-expense);
+  --color-amber:   var(--c-amber);
+  --color-violet:  var(--c-violet);
+  --color-sky:     var(--c-sky);
+  --color-text-1:  var(--c-text-1);
+  --color-text-2:  var(--c-text-2);
+  --color-text-3:  var(--c-text-3);
+  --color-text-4:  var(--c-text-4);
+  --color-text-5:  var(--c-text-5);
+
+  --font-sans:   'Inter', system-ui, sans-serif;
+  --font-tight:  'Inter Tight', system-ui, sans-serif;
+  --font-icons:  'Material Symbols Rounded';
+  --font-mono:   ui-monospace, monospace;
+
+  --radius-sm: 11px;
+  --radius-md: 18px;
+  --radius-lg: 22px;
+  --radius-full: 999px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  background: var(--c-base);
+  color: var(--c-text-1);
+  font-family: 'Inter', system-ui, sans-serif;
+  margin: 0;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.10); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.18); }
+
+/* Material Symbols helper */
+.icon {
+  font-family: 'Material Symbols Rounded';
+  font-style: normal;
+  font-size: 20px;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  -webkit-font-smoothing: antialiased;
+  font-variation-settings: 'wght' 300;
+  user-select: none;
+}
+.icon-filled { font-variation-settings: 'wght' 400, 'FILL' 0; }
+.icon-bold   { font-variation-settings: 'wght' 500; }
+
+/* Tabular numbers for money */
+.tabular { font-variant-numeric: tabular-nums; }

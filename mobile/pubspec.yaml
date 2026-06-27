@@ -1,0 +1,63 @@
+name: nest
+description: Nest — Personal Finance mobile app
+publish_to: 'none'
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.3.0 <4.0.0'
+  flutter: '>=3.19.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # State management
+  riverpod: ^2.5.1
+  flutter_riverpod: ^2.5.1
+
+  # Navigation
+  go_router: ^13.2.0
+
+  # HTTP
+  dio: ^5.4.3
+  retrofit: ^4.1.0
+
+  # Storage
+  flutter_secure_storage: ^9.0.0
+  shared_preferences: ^2.2.3
+
+  # Charts
+  fl_chart: ^0.67.0
+
+  # UI
+  google_fonts: ^6.2.1
+  material_symbols_icons: ^4.2781.0
+
+  # Notifications
+  flutter_local_notifications: ^17.1.2
+
+  # Utils
+  intl: ^0.19.0
+  freezed_annotation: ^2.4.1
+  json_annotation: ^4.9.0
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^3.0.0
+  build_runner: ^2.4.8
+  freezed: ^2.5.2
+  json_serializable: ^6.8.0
+  retrofit_generator: ^8.1.0
+
+flutter:
+  uses-material-design: true
+  fonts:
+    - family: InterTight
+      fonts:
+        - asset: assets/fonts/InterTight-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/InterTight-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/InterTight-ExtraBold.ttf
+          weight: 800
