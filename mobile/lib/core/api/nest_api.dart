@@ -536,7 +536,7 @@ class TransactionPage {
   TransactionPage({required this.items, required this.totalCount, required this.page, required this.pageSize});
   factory TransactionPage.fromJson(Map<String, dynamic> j) => TransactionPage(
     items: (j['items'] as List).map((e) => TransactionDto.fromJson(e as Map<String, dynamic>)).toList(),
-    totalCount: (j['totalCount'] as num).toInt(),
+    totalCount: (j['total'] as num).toInt(),
     page: (j['page'] as num).toInt(),
     pageSize: (j['pageSize'] as num).toInt(),
   );
